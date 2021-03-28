@@ -1,0 +1,17 @@
+What do we need?
+Rules
+- Piece team
+    * Do pieces belong to a Team set or do they each have a Team field?
+        - each has a team field?
+- Piece move restrictions
+    * move locations
+        -
+    * move legality (pertaining to king safety)
+    * special moves (promotion, castling, en passant)
+    * capturing
+- States / Turns
+    * init
+    * final (checkmate, stalemate)
+
+Broad design questions
+- How much do we want hard code things (e.g. do we just have a Bishop, or do we have B1 + B2)
