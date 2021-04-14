@@ -3,37 +3,45 @@
 option problem_type temporal 
 option max_tracelength 10 -- NEEDED! default is 5. need to be able to find the whole lasso.
 
-sig row {r_prev: lone row, r_next: lone row}
+/*
+ * Logic for Systems Final Project - Chess Model
+**/
 
--- 
+-- We define our board with rows and columns that have previous and next neighbors.
+sig row {r_prev: lone row, r_next: lone row}
 sig col {c_prev: lone col, c_next: lone col}
 
-abstract sig piece {
-  var sq: lone square,
-  var moves: set square -- ?
-}
-
+-- We have squares that can optionally match to a piece occupying it.
 sig square {var pc: lone piece}
 
--- These represent the numbers 0-8, which are the only possible numbers in our grid
-sig P extends piece {}
-sig N extends piece {}
-sig B extends piece {}
-sig R extends piece {}
-sig Q extends piece {}
-sig K extends piece {}
+-- A piece optionally matches to a square that it occupies, plus any squares it can move to. 
+abstract sig piece {
+  var sq: lone square,
+  var moves: set square
+}
 
+-- These represent our chess pieces, with the letter corresponding to the piece name in algebraic notation (excepting pawns). 
+sig P extends piece {} -- pawn
+sig N extends piece {} -- knight
+sig B extends piece {} -- bishop
+sig R extends piece {} -- rook
+sig Q extends piece {} -- queen
+sig K extends piece {} -- king
+
+-- The board contains places that are rows to cols to squares. 
 one sig Board {
   -- Each row, col pair maps to a cell
   places: set row -> col -> square
 }
 
 pred structural { -- solely focused on board dimensions
-  -- Either a mine or a number is in each cell
   some row 
   some col
+
+  -- single square occupancy
   all b: Board | all i: row | all j: col | lone b.places[i][j]
   all s: square | all b: Board | one (b.places).s
+
   -- one row that doesn't have prev, one doesn't have next
   one r: row | {no r.r_next}
   one r: row | {no r.r_prev}
@@ -57,12 +65,19 @@ pred validBoard { -- position legality
 }
 
 pred KMoves[k: King]{
-  some k.sq
-  k.moves = -- TODO
-  -- places = Board->row->col->sq
-  -- row = (((Board.places.(k.sq))).col
-  -- col = row.(((Board.places.(k.sq)))
+  -- king is on some square
+  -- can go to all adjacent squares. i.e. nextrow, row, prevrow x nextcol, col, prevcol
+  -- ^ above method doesn't seem to extend to longer range pieces e.g. queen
 }
+
+-- to check for blocking pieces, get row/col/whatever. then, for the blocking piece, get the difference of its line of sight
+-- to the piece. ex:
+-- a . . . x . . . a's horizontal moves can be found by a.next^ - x.next*
+
+-- Diagonals TODO
+-- (r_next.( row -> col ).c_next)^  ?
+-- function that returns a diagonal
+-- hard code diagonals into squares
 
 pred moveK
 
