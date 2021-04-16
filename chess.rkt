@@ -19,7 +19,7 @@ one sig colA extends col {}
 one sig colB extends col {}
 one sig colC extends col {}
 one sig colD extends col {}
-one sig colE extends col {} -- disabled for performance reasons
+// one sig colE extends col {} -- disabled for performance reasons
 // one sig colF extends col {}
 // one sig colG extends col {}
 // one sig colH extends col {}
@@ -28,7 +28,7 @@ one sig row1 extends row {}
 one sig row2 extends row {}
 one sig row3 extends row {}
 one sig row4 extends row {}
-one sig row5 extends row {}
+// one sig row5 extends row {}
 // one sig row6 extends row {}
 // one sig row7 extends row {}
 // one sig row8 extends row {}
@@ -84,8 +84,9 @@ one sig White extends Color {}
 -- preds for color membership
 pred colorMembership { -- TODO UNSAT
   all p: piece | {
-    // p in (WP + WN + WB + WR + WQ + WK) iff p in White.pieces
-    // p in (BP + BN + BB + BR + BQ + BK) iff p in Black.pieces
+    p in (WP + WN + WB + WR + WQ + WK) implies p in White.pieces
+    p in (BP + BN + BB + BR + BQ + BK) implies p in Black.pieces
+    no White.pieces & Black.pieces
   }
 }
 
@@ -237,7 +238,8 @@ pred piecesToSquares { -- ensures squares and pieces are one-to-one mapped
 
 -- King related preds --------------------------
 pred validKings { -- should only and always have 2 kings.
-  #(K) = 2
+  #(BK) = 1
+  #(WK) = 1
   all k: K | {
     some k.sq
     some pc.k
@@ -425,17 +427,34 @@ pred validBoard { -- position legality
   colorMembership
 }
 
+pred whiteMove {
+  one p: piece | { generalMove[p] and p in White.pieces } 
+}
+
+pred blackMove {
+  one p: piece | { generalMove[p] and p in Black.pieces }
+}
+
 -- init state  
 pred init {
-  some p: piece | {
+  whiteMove
+  // validKings
+  all p: piece | {
     some p.sq
   }
+}
+
+-- turns
+pred turns {
+  whiteMove implies { after blackMove }
+  blackMove implies { after whiteMove }
 }
 
 -- traces 
 pred traces {
   always { validBoard }
-  always { one p: piece | generalMove[p] } 
+  // always { one p: piece | generalMove[p] } 
+  always { turns }
 }
 
 -- generates a chess puzzle 
@@ -443,7 +462,8 @@ pred generatePuzzle {
   init
   always {
     structural
-    allMoves }
+    allMoves 
+  }
   traces
   // always { validBoard }
   // always { allMoves }
@@ -455,4 +475,4 @@ pred generatePuzzle {
 }
 
 -- generates a 5x5 board 
-run {generatePuzzle} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 5 piece, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
+run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 5 piece, exactly 1 WK, exactly 1 BK, exactly 1 BB, exactly 1 BQ, exactly 1 WR//, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
