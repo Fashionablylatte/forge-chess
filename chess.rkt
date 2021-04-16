@@ -7,7 +7,6 @@ option max_tracelength 3 -- NEEDED! default is 5. need to be able to find the wh
 // option coregranularity 1
 // option core_minimization rce
 
-
 /*
  * Logic for Systems Final Project - Chess Model
 **/
@@ -74,6 +73,7 @@ one sig Board {
   places: set row -> col -> square
 }
 
+-- Represents color of pieces 
 abstract sig Color {
   pieces: set piece
 }
@@ -89,7 +89,7 @@ pred colorMembership {
   }
 }
 
--- new: finds the opposite color 
+-- finds if two pieces are the same color
 pred isSameColor[p1: piece, p2: piece] {
   (p1 in Black.pieces and p2 in Black.pieces) or 
   (p1 in White.pieces and p2 in White.pieces)
@@ -172,6 +172,7 @@ fun allDiags[sq: square]: set square {
   pcprDiags[sq] + pcnrDiags[sq] + ncnrDiags[sq] + ncprDiags[sq]
 }
 
+-- STRUCTURE + VALIDITY ----------------------
 pred structural { -- solely focused on board dimensions
   some row 
   some col
@@ -314,17 +315,6 @@ pred validMovesForKnight[a: square, n: N] {
 }
 
 -- Rook related preds --------------------------
-// always { 
-//   // all r: R | all s : square - r.sq | { 
-//   //   validMovesForRook[s, r] => s in r.moves 
-//   //   !validMovesForRook[s, r] => s not in r.moves 
-//   // }
-//   // all r: R | all s : square - r.sq' | { 
-//   //   validMovesForRook[s, r'] => s in r.moves' 
-//   //   !validMovesForRook[s, r] => s not in r.moves' 
-//   // } 
-// } 
-
 pred RMoves[r: R] {
   all s: square | {
     s in r.moves iff {
@@ -394,10 +384,10 @@ pred QMoves[q: Q] {
   }
 }
 
-
------------------
+--- General move-related preds --------------
 
 -- also need to consider: white cannot move unless black moves b4, vice versa
+-- KNOWN BUGS: 
 pred generalMove[p : piece] {
   -- some square before 
   some p.sq
@@ -408,16 +398,19 @@ pred generalMove[p : piece] {
   -- captured 
   some s : square | (s = p.sq' and some s.pc) and (not isSameColor[s.pc, p]) => {
     s.pc not in square.pc'
-    #(square.pc) > #(square.pc')
+    square.pc - s.pc = square.pc'
+  } else {
+    square.pc = square.pc'
   }
   all other : piece - p | not other.sq = p.sq' => {
-    other.sq = other.sq'
+    other.sq' = other.sq
   }
   all other : piece - p | other.sq = p.sq' => {
-    other.sq = other.sq' or no other.sq'
+    other.sq' = other.sq or no other.sq'
   }
 }
 
+-- ensures all pieces maintain valid moves 
 pred allMoves {
   all b: B | { BMoves[b] }
   all n: N | { NMoves[n] }
@@ -432,7 +425,7 @@ pred validBoard { -- position legality
   colorMembership
 }
 
--- init: changed 
+-- init state  
 pred init {
   some p: piece | {
     some p.sq
@@ -445,10 +438,10 @@ pred traces {
   always { one p: piece | generalMove[p] } 
 }
 
-
+-- generates a chess puzzle 
 pred generatePuzzle {
   init
-  always { validBoard
+  always {
     structural
     allMoves }
   traces
@@ -461,4 +454,5 @@ pred generatePuzzle {
   // K.sq.coord = row2->colC
 }
 
-run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 5 piece, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
+-- generates a 5x5 board 
+run {generatePuzzle} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 5 piece, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
