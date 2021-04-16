@@ -1,7 +1,7 @@
 #lang forge
 
 option problem_type temporal 
-option max_tracelength 10 -- NEEDED! default is 5. need to be able to find the whole lasso.
+option max_tracelength 3 -- NEEDED! default is 5. need to be able to find the whole lasso.
 
 /*
  * Logic for Systems Final Project - Chess Model
@@ -15,28 +15,24 @@ one sig colA extends col {}
 one sig colB extends col {}
 one sig colC extends col {}
 one sig colD extends col {}
-one sig colE extends col {}
-one sig colF extends col {}
-one sig colG extends col {}
-one sig colH extends col {}
+// one sig colE extends col {} -- disabled for performance reasons
+// one sig colF extends col {}
+// one sig colG extends col {}
+// one sig colH extends col {}
 
 one sig row1 extends row {}
 one sig row2 extends row {}
 one sig row3 extends row {}
 one sig row4 extends row {}
-one sig row5 extends row {}
-one sig row6 extends row {}
-one sig row7 extends row {}
-one sig row8 extends row {}
+// one sig row5 extends row {}
+// one sig row6 extends row {}
+// one sig row7 extends row {}
+// one sig row8 extends row {}
 
 -- We have squares that can optionally match to a piece occupying it.
 sig square {
   var pc: lone piece,
-  coord: set row -> col //,
-  // pColPRowDiag: lone square,
-  // pColNRowDiag: lone square,
-  // nColPRowDiag: lone square,
-  // nColNRowDiag: lone square
+  coord: set row -> col
 }
 
 -- A piece optionally matches to a square that it occupies, plus any squares it can move to. 
@@ -62,7 +58,6 @@ one sig Board {
 }
 
 -- Helpers for finding square relations
-
 fun prevRow[sq: square]: lone row {
   sq.coord.col.r_prev
 }
@@ -168,18 +163,18 @@ pred structural { -- solely focused on board dimensions
   colA.c_next = colB
   colB.c_next = colC
   colC.c_next = colD
-  colD.c_next = colE
-  colE.c_next = colF
-  colF.c_next = colG
-  colG.c_next = colH
+  // colD.c_next = colE
+  // colE.c_next = colF
+  // colF.c_next = colG
+  // colG.c_next = colH
 
   row1.r_next = row2
   row2.r_next = row3
   row3.r_next = row4
-  row4.r_next = row5
-  row5.r_next = row6
-  row6.r_next = row7
-  row7.r_next = row8
+  // row4.r_next = row5
+  // row5.r_next = row6
+  // row6.r_next = row7
+  // row7.r_next = row8
 
   -- maps each square to its coords
   all sq: square | all r: row | all c: col | {
@@ -189,7 +184,7 @@ pred structural { -- solely focused on board dimensions
   -- diagonal relations were too computationally expensive to generate in advance.
 }
 
-pred piecesToSquares {
+pred piecesToSquares { -- ensures squares and pieces are one-to-one mapped
   -- bidirectional mapping
   all p: piece | all s: square {
     s in p.sq implies p in s.pc
@@ -201,18 +196,8 @@ pred piecesToSquares {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-pred validKings {
+-- King related preds --------------------------
+pred validKings { -- should only and always have 2 kings.
   #(K) = 2
   all k: K | {
     some k.sq
@@ -220,10 +205,6 @@ pred validKings {
   }
 }
 
-pred validBoard { -- position legality 
-  validKings
-  piecesToSquares
-}
 
 pred KMoves[k: King]{
   -- king is on some square
@@ -231,66 +212,142 @@ pred KMoves[k: King]{
   -- ^ above method doesn't seem to extend to longer range pieces e.g. queen
 }
 
--- to check for blocking pieces, get row/col/whatever. then, for the blocking piece, get the difference of its line of sight
--- to the piece. ex:
--- a . . . x . . . a's horizontal moves can be found by a.next^ - x.next*
-
--- Diagonals TODO
--- (r_next.( row -> col ).c_next)^  ?
--- function that returns a diagonal
--- hard code diagonals into squares
-
 pred moveK {
 
 }
 
-
+-- Bishop related preds --------------------------
 pred BMoves[b: B] {
-  // b.moves in allDiags[b] -- only diagonals are in consideration
-  all s: square | {
-    s in b.moves iff {
-      (s in pcprDiags[b.sq] and (no p: piece | {p.sq in pcprDiags[b.sq] and p.sq in ncnrDiags[s]})) or
-      (s in pcnrDiags[b.sq] and (no p: piece | {p.sq in pcnrDiags[b.sq] and p.sq in ncprDiags[s]})) or
-      (s in ncprDiags[b.sq] and (no p: piece | {p.sq in ncprDiags[b.sq] and p.sq in pcnrDiags[s]})) or
-      (s in ncnrDiags[b.sq] and (no p: piece | {p.sq in ncnrDiags[b.sq] and p.sq in pcprDiags[s]}))
+  -- need to add legality for king safety. If king in danger, none, else, ...?
+  all s: square | { -- For all squares, ...
+    s in b.moves iff { -- square is in bishop's legal moves iff ...
+      validMovesForBishop[s, b]
     }
-    // -- if a square is in diags... 
-    // s in allDiags[b] implies {
-    //   -- ... and has a piece, then...  TODO check that the bishop itself is not included (thx to allDiags)
-    //   (some s.piece) implies {
-    //     -- ... all squares past it are excluded. TODO check for team (capturing)
-    //     s in pcprDiag[b.sq] implies pcprDiag[s] not in b.moves
-    //     s in pcnrDiag[b.sq] implies pcnrDiag[s] not in b.moves
-    //     s in ncnrDiag[b.sq] implies ncnrDiag[s] not in b.moves
-    //     s in ncprDiag[b.sq] implies ncnrDiag[s] not in b.moves
-    //   }
-
-    //   -- ... and 
-    // }
   }
 }
 
-// pred BExcluded[b: B] {
-//   all p: piece | {
-//     (not (p = b) and some p.sq) implies {
-//       b.excluded = 
-//         (p.sq in pcprDiag[b.sq] => pcprDiag[p.sq] else none) + 
-//         (p.sq in pcnrDiag[b.sq] => pcnrDiag[p.sq] else none) +
-//         (p.sq in ncnrDiag[b.sq] => ncnrDiag[p.sq] else none) +
-//         (p.sq in ncprDiag[b.sq] => ncnrDiag[p.sq] else none)
+pred validMovesForBishop[a: square, b: piece] {  -- should be B, but piece to allow reuse with Queen 
+  -- true for square a if it is on a diagonal square that is not blocked
+    (a in pcprDiags[b.sq] and (no p: piece | {p.sq in pcprDiags[b.sq] and p.sq in ncnrDiags[a]})) or
+    (a in pcnrDiags[b.sq] and (no p: piece | {p.sq in pcnrDiags[b.sq] and p.sq in ncprDiags[a]})) or
+    (a in ncprDiags[b.sq] and (no p: piece | {p.sq in ncprDiags[b.sq] and p.sq in pcnrDiags[a]})) or
+    (a in ncnrDiags[b.sq] and (no p: piece | {p.sq in ncnrDiags[b.sq] and p.sq in pcprDiags[a]}))
+}
 
-//       // p.sq in pcprDiag[b.sq] implies pcprDiag[p.sq] in b.excluded
-//       // p.sq in pcnrDiag[b.sq] implies pcnrDiag[p.sq] in b.excluded
-//       // p.sq in ncnrDiag[b.sq] implies ncnrDiag[p.sq] in b.excluded
-//       // p.sq in ncprDiag[b.sq] implies ncnrDiag[p.sq] in b.excluded
-//       -- TODO if piece is in opposite team, also allow capture
-//       -- TODO if move exposes King to check, disallow.
-//     }
-//   }
-// }
+-- Knight related preds ------------------------------
+pred NMoves[n: N] {
+  all s: square | {
+    s in n.moves iff {
+      validMovesForKnight[s, n]
+    }
+  }
+}
+pred validMovesForKnight[a: square, n: N] {
+  { n.sq.coord.col = a.coord.col.r_next and n.sq.coord[row] = (a.coord[row]).c_next.c_next } or 
+  { n.sq.coord.col = a.coord.col.r_next and n.sq.coord[row] = (a.coord[row]).c_prev.c_prev } or 
+  { n.sq.coord.col = a.coord.col.r_prev and n.sq.coord[row] = (a.coord[row]).c_next.c_next } or 
+  { n.sq.coord.col = a.coord.col.r_prev and n.sq.coord[row] = (a.coord[row]).c_prev.c_prev } or 
+  { n.sq.coord[row] = (a.coord[row]).c_next and n.sq.coord.col = a.coord.col.r_next.r_next } or 
+  { n.sq.coord[row] = (a.coord[row]).c_next and n.sq.coord.col = a.coord.col.r_prev.r_prev } or 
+  { n.sq.coord[row] = (a.coord[row]).c_prev and n.sq.coord.col = a.coord.col.r_next.r_next } or 
+  { n.sq.coord[row] = (a.coord[row]).c_prev and n.sq.coord.col = a.coord.col.r_prev.r_prev }
+}
+
+-- Rook related preds --------------------------
+// always { 
+//   // all r: R | all s : square - r.sq | { 
+//   //   validMovesForRook[s, r] => s in r.moves 
+//   //   !validMovesForRook[s, r] => s not in r.moves 
+//   // }
+//   // all r: R | all s : square - r.sq' | { 
+//   //   validMovesForRook[s, r'] => s in r.moves' 
+//   //   !validMovesForRook[s, r] => s not in r.moves' 
+//   // } 
+// } 
+
+pred RMoves[r: R] {
+  all s: square | {
+    s in r.moves iff {
+      validMovesForRook[s, r]
+    }
+  }
+}
+ 
+pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own starting square
+  -- assuming that: 
+  -- rook starts on some square, some square has it
+  -- ends on some square, some square' has it
+  -- captures happen if other color piece in r's square' (aka square') doesn't
+  --    have piece of same color
+  -- squares for which this predicate is false won't be in r.moves
+
+  -- exclude its own square TODO double check
+  not r.sq = a
+
+  -- the after piece is in the same row or col
+  r.sq.coord.col = a.coord.col or r.sq.coord[row] = a.coord[row]
+
+  -- no other pieces in the space between the before and after squares
+  -- if same row (moved cols)
+  r.sq.coord.col = a.coord.col => {
+      -- if moving down cols 
+    r.sq.coord[row] in (a.coord[row]).^c_next => {
+      -- set of intermediate pieces is empty 
+      all s : square | s.coord[row] in ((a.coord[row]).^c_next & (r.sq.coord[row]).^c_prev) and (r.sq.coord.col = s.coord.col) => {
+        no s.pc
+      } 
+    } 
+    -- if moving up the cols 
+    a.coord[row] in (r.sq.coord[row]).^c_next => {
+      -- set of intermediate pieces is empty 
+      all s : square | s.coord[row] in ((a.coord[row]).^c_prev & (r.sq.coord[row]).^c_next) and (r.sq.coord.col = s.coord.col) => {
+        no s.pc
+      } 
+    }
+  } 
+  -- if same col (moved rows)
+  r.sq.coord[row] = a.coord[row] => {
+      -- if moving down rows 
+    r.sq.coord.col in a.coord.col.^r_next => {
+      -- set of intermediate pieces is empty 
+      all s : square | s.coord.col in ((a.coord.col.^r_next) & (r.sq.coord.col.^r_prev)) and (r.sq.coord[row] = s.coord[row]) => {
+        no s.pc
+      }
+    } 
+    -- if moving up the rows 
+    a.coord[row] in r.sq.coord.col.^r_next => {
+      -- set of intermediate pieces is empty 
+      all s : square | s.coord.col in ((a.coord.col.^r_prev) & (r.sq.coord.col.^r_next)) and (r.sq.coord[row] = s.coord[row]) => {
+        no s.pc
+      }
+    }
+  }
+}
+
+-- Queen related preds -------------------------
+
+pred QMoves[q: Q] {
+  all s: square | {
+    s in q.moves iff {
+      validMovesForRook[s, q] or validMovesForBishop[s, q]
+    }
+  }
+}
+
+
+-----------------
 
 pred allMoves {
   all b: B | { BMoves[b] }
+  all n: N | { NMoves[n] }
+  all r: R | { RMoves[r] }
+  all q: Q | { QMoves[q] }
+}
+
+
+pred validBoard { -- position legality 
+  // validKings
+  piecesToSquares
 }
 
 pred init {
@@ -304,8 +361,14 @@ pred init {
 pred generatePuzzle {
   structural
   init
-  always { validBoard }
+  validBoard
+  allMoves
+  // always { validBoard }
   // always { allMoves }
+  B.sq.coord = row2->colB
+  N.sq.coord = row3->colB
+  R.sq.coord = row4->colB
+  Q.sq.coord = row4->colA
 }
 
-run {generatePuzzle} for exactly 8 col, exactly 8 row, exactly 64 square, exactly 5 piece, exactly 2 K, exactly 1 B, exactly 1 Q, exactly 1 N
+run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 4 piece, exactly 1 B, exactly 1 N, exactly 1 R, exactly 1 Q
