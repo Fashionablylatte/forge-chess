@@ -24,8 +24,8 @@ function printValue(row, col, xoffset, yoffset, value) {
       case "WN0":
         var myimage = d3.select(svg).append('image')
           .attr('xlink:href', 'http://clipart-library.com/images/pio5AeRaT.jpg')
-          .attr("x", row*75 + xoffset*1)
-          .attr("y", col*75 + yoffset*1)
+          .attr("x", row*65 + xoffset*1)
+          .attr("y", col*60 + yoffset*1)
           .attr('width', 50)
           .attr('height', 50);
          break;
@@ -113,4 +113,3 @@ function printBoard(startRow, startCol, board) {
 }
 
 printBoard(row4, colA, Board0);
-
