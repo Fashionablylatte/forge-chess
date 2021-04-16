@@ -19,7 +19,7 @@ one sig colA extends col {}
 one sig colB extends col {}
 one sig colC extends col {}
 one sig colD extends col {}
-// one sig colE extends col {} -- disabled for performance reasons
+one sig colE extends col {} -- disabled for performance reasons
 // one sig colF extends col {}
 // one sig colG extends col {}
 // one sig colH extends col {}
@@ -28,7 +28,7 @@ one sig row1 extends row {}
 one sig row2 extends row {}
 one sig row3 extends row {}
 one sig row4 extends row {}
-// one sig row5 extends row {}
+one sig row5 extends row {}
 // one sig row6 extends row {}
 // one sig row7 extends row {}
 // one sig row8 extends row {}
@@ -82,7 +82,7 @@ one sig Black extends Color {}
 one sig White extends Color {}
 
 -- preds for color membership
-pred colorMembership {
+pred colorMembership { -- TODO UNSAT
   all p: piece | {
     // p in (WP + WN + WB + WR + WQ + WK) iff p in White.pieces
     // p in (BP + BN + BB + BR + BQ + BK) iff p in Black.pieces
@@ -386,7 +386,7 @@ pred QMoves[q: Q] {
 
 --- General move-related preds --------------
 
--- also need to consider: white cannot move unless black moves b4, vice versa
+-- also need to consider: white cannot move unless black moves b4 (before?), vice versa
 -- KNOWN BUGS: 
 pred generalMove[p : piece] {
   -- some square before 
