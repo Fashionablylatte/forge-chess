@@ -2,6 +2,11 @@
 
 option problem_type temporal 
 option max_tracelength 3 -- NEEDED! default is 5. need to be able to find the whole lasso.
+// option solver MiniSatProver
+// option logtranslation 1
+// option coregranularity 1
+// option core_minimization rce
+
 
 /*
  * Logic for Systems Final Project - Chess Model
@@ -70,13 +75,19 @@ one sig Board {
 }
 
 abstract sig Color {
-  pieces: set pieces
+  pieces: set piece
 }
 
 one sig Black extends Color {}
 one sig White extends Color {}
 
 -- preds for color membership
+pred colorMembership {
+  all p: piece | {
+    // p in (WP + WN + WB + WR + WQ + WK) iff p in White.pieces
+    // p in (BP + BN + BB + BR + BQ + BK) iff p in Black.pieces
+  }
+}
 
 -- Helpers for finding square relations
 fun prevRow[sq: square]: lone row {
@@ -358,7 +369,7 @@ pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own s
       }
     } 
     -- if moving up the rows 
-    a.coord[row] in r.sq.coord.col.^r_next => {
+    a.coord.col in r.sq.coord.col.^r_next => {
       -- set of intermediate pieces is empty 
       all s : square | s.coord.col in ((a.coord.col.^r_prev) & (r.sq.coord.col.^r_next)) and (r.sq.coord[row] = s.coord[row]) => {
         no s.pc
@@ -391,6 +402,7 @@ pred allMoves {
 pred validBoard { -- position legality 
   // validKings
   piecesToSquares
+  colorMembership
 }
 
 pred init {
@@ -408,11 +420,11 @@ pred generatePuzzle {
   allMoves
   // always { validBoard }
   // always { allMoves }
-  B.sq.coord = row2->colB
-  N.sq.coord = row3->colB
-  R.sq.coord = row4->colB
-  Q.sq.coord = row4->colA
-  K.sq.coord = row2->colC
+  // B.sq.coord = row2->colB
+  // N.sq.coord = row3->colB
+  // R.sq.coord = row4->colB
+  // Q.sq.coord = row4->colA
+  // K.sq.coord = row2->colC
 }
 
-run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 5 piece, exactly 1 B, exactly 1 N, exactly 1 R, exactly 1 Q, exactly 1 K
+run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 5 piece, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
