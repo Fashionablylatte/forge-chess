@@ -128,11 +128,138 @@ pred validBoard { -- position legality
   piecesToSquares
 }
 
-pred KMoves[k: King]{
+
+fun prevRow[sq: square]: lone row {
+  sq.coord.col.r_prev
+}
+
+fun nextRow[sq: square]: lone row {
+  sq.coord.col.r_next
+}
+
+fun prevCol[sq: square]: lone col {
+  (sq.coord[row]).c_prev
+}
+
+fun nextCol[sq: square]: lone col {
+  (sq.coord[row]).c_next
+}
+
+-- Specifies that in the transition, only one piece can move
+-- The piece p moves to the square s
+
+-- A move where no piece is captured, the piece simply moves to the inputted square
+pred peacefulMove[p : piece, s : square] {
+  sq' = sq - (p -> p.sq) + (p -> s)
+}
+
+-- Indicates that p1 captures p2
+pred capture[p1 : piece, p2 : piece] {
+  sq' = sq - (p1 -> p1.sq) - (p2 -> p2.sq) + (p1 -> p2.sq)
+}
+
+-- s2 is forward diagonal from s1
+pred forwardDiagonal[s1 : square, s2 : square] {
+  some s2.pc
+  nextRow[s1] = s2.coord.col
+  // s2's col must be s1's next or prev col
+  nextCol[s1] = s2.coord[row] || prevCol[s1] = s2.coord[row]
+}
+
+-- Specifies that s2 must be directly in front of s1 (assumes that row.next takes you up the board), currently only works for white pieces
+pred oneInFront[s1 : square, s2 : square] {
+  no s2.pc
+  s1.coord[row] = s2.coord[row]
+  nextRow[s1] = s2.coord.col
+}
+
+pred twoInFront[s1 : square, s2 : square] {
+  no s2.pc
+  s1.coord[row] = s2.coord[row]
+  nextRow[s1].r_next = s2.coord.col
+}
+
+pred reachedEdge[p : P] {
+  p.sq.coord.col = row1 || p.sq.coord.col = row8
+} 
+
+  -- The pawn must be on the board,
+pred pawnMoves[p : P] {
+  -- Right now only works for white pieces
+  some p.sq
+  all s : square | {
+      s in p.moves iff {
+        oneInFront[p.sq, s] || (twoInFront[p.sq, s] && p.sq.coord.col = row2) || forwardDiagonal[p.sq, s]
+      }
+    }
+}
+
+// some p.sq
+// some s : square | {
+//   // If there is a piece on the square that it moves to, the it must've been a capture, otherwise it was a peaceful move
+//   some s.pc implies {
+//     // The square that s.pc is on must be diagonal to the pawn
+//     capture[p, s.pc]
+//     forwardDiagonal[p.sq, s]
+//   } else {
+//     peacefulMove[p, s]
+//     p.sq.coord.col = row2 implies {
+//       oneInFront[p.sq, s] or twoInFront[p.sq, s]
+//     } else {
+//       oneInFront[p.sq, s]
+//     }
+//   }
+// }
+
+
+-- Imagine that s1 is the square that remains stationary, and we check if s2 is in any of the 8 squares surrounding s1
+pred adjacentTo[s1 : square, s2 : square] {
+  -- If the row coordinates are the same, the col coordinate must either be the next or prev
+  s1.coord.col = s2.coord.col implies {
+    nextCol[s1] = s2.coord[row] || prevCol[s1] = s2.coord[row]
+  }
+
+  -- If the col coordinates are the same, the row coordinate must either be the next or prev
+  s1.coord[row] = s2.coord[row] implies {
+    nextRow[s1] = s2.coord.col or prevRow[s1] = s2.coord.col
+  }
+
+  -- If neither the row or col coordinates are the same, then the row coord must be either the next or prev, and the col coord must also be either the next or prev
+  (s1.coord.col != s2.coord.col && s1.coord[row] != s2.coord[row]) implies {
+    nextRow[s1] = s2.coord.col || prevRow[s1] = s2.coord.col
+    nextCol[s1] = s2.coord[row] || prevCol[s1] = s2.coord[row]
+  }
+}
+
   -- king is on some square
   -- can go to all adjacent squares. i.e. nextrow, row, prevrow x nextcol, col, prevcol
   -- ^ above method doesn't seem to extend to longer range pieces e.g. queen
+  -- Only the king moves
+  -- Rules:
+    -- The square that the king was previously on is now empty
+    -- The king occupies a new square
+    -- That square cannot be occupied by another piece (for now)
+    -- That square must be one of the adjacent squares
+
+pred kingMoves[k : K] {
+
+  -- King must be on the board currently
+  some k.sq
+    -- There is some square that the king can move to
+  all s : square | {
+    -- The square must be adjacent to the square of the king
+    -- Does not yet count for squares that are protected by an opposing piece
+    s in k.moves iff {
+      adjacentTo[k.sq, s]
+    }
+  }
 }
+
+// some s.pc implies {
+//   capture[k, s.pc]
+// } else {
+//   peacefulMove[k, s]
+// }
 
 -- to check for blocking pieces, get row/col/whatever. then, for the blocking piece, get the difference of its line of sight
 -- to the piece. ex:
@@ -143,13 +270,12 @@ pred KMoves[k: King]{
 -- function that returns a diagonal
 -- hard code diagonals into squares
 
-pred moveK {
-
-}
-
 pred init {
   all p: piece | {
     some p.sq
+  }
+  all pawn : P | {
+    pawn.sq.coord.col = row2
   }
 }
 
@@ -163,4 +289,13 @@ fun topDiag[sq: square]: lone square {
   { square } -- TODO
 }
 
-run {generatePuzzle and validBoard} for exactly 8 col, exactly 8 row, exactly 64 square, exactly 5 piece, exactly 2 K, exactly 1 B, exactly 1 Q, exactly 1 N
+pred validKingMoves {
+  all k : K | {
+    kingMoves[k]
+  }
+}
+
+
+// run {generatePuzzle and validBoard and pawnMove} for exactly 8 col, exactly 8 row, exactly 64 square, exactly 5 piece, exactly 2 K, exactly 1 B, exactly 1 Q, exactly 1 P
+
+run {generatePuzzle and validBoard and init and validKingMoves} for exactly 8 col, exactly 8 row, exactly 64 square, exactly 3 piece, exactly 2 K, exactly 1 P
