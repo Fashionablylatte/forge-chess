@@ -20,7 +20,7 @@ one sig colA extends col {}
 one sig colB extends col {}
 one sig colC extends col {}
 one sig colD extends col {}
-// one sig colE extends col {} -- disabled for performance reasons
+one sig colE extends col {} -- disabled for performance reasons
 // one sig colF extends col {}
 // one sig colG extends col {}
 // one sig colH extends col {}
@@ -29,7 +29,7 @@ one sig row1 extends row {}
 one sig row2 extends row {}
 one sig row3 extends row {}
 one sig row4 extends row {}
-// one sig row5 extends row {}
+one sig row5 extends row {}
 // one sig row6 extends row {}
 // one sig row7 extends row {}
 // one sig row8 extends row {}
@@ -427,4 +427,4 @@ pred generatePuzzle {
   // K.sq.coord = row2->colC
 }
 
-run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 5 piece, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
+run {generatePuzzle} for exactly 6 col, exactly 6 row, exactly 36 square, exactly 5 piece, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
