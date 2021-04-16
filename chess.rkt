@@ -89,6 +89,12 @@ pred colorMembership {
   }
 }
 
+-- new: finds the opposite color 
+pred isSameColor[p1: piece, p2: piece] {
+  (p1 in Black.pieces and p2 in Black.pieces) or 
+  (p1 in White.pieces and p2 in White.pieces)
+}
+
 -- Helpers for finding square relations
 fun prevRow[sq: square]: lone row {
   sq.coord.col.r_prev
@@ -391,6 +397,27 @@ pred QMoves[q: Q] {
 
 -----------------
 
+-- also need to consider: white cannot move unless black moves b4, vice versa
+pred generalMove[p : piece] {
+  -- some square before 
+  some p.sq
+  -- some square after 
+  some p.sq' 
+  -- valid move 
+  p.sq' in p.moves
+  -- captured 
+  some s : square | (s = p.sq' and some s.pc) and (not isSameColor[s.pc, p]) => {
+    s.pc not in square.pc'
+    #(square.pc) > #(square.pc')
+  }
+  all other : piece - p | not other.sq = p.sq' => {
+    other.sq = other.sq'
+  }
+  all other : piece - p | other.sq = p.sq' => {
+    other.sq = other.sq' or no other.sq'
+  }
+}
+
 pred allMoves {
   all b: B | { BMoves[b] }
   all n: N | { NMoves[n] }
@@ -405,19 +432,26 @@ pred validBoard { -- position legality
   colorMembership
 }
 
+-- init: changed 
 pred init {
-  all p: piece | {
+  some p: piece | {
     some p.sq
   }
 }
 
+-- traces 
+pred traces {
+  always { validBoard }
+  always { one p: piece | generalMove[p] } 
+}
 
 
 pred generatePuzzle {
-  structural
   init
-  validBoard
-  allMoves
+  always { validBoard
+    structural
+    allMoves }
+  traces
   // always { validBoard }
   // always { allMoves }
   // B.sq.coord = row2->colB
