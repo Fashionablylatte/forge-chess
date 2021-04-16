@@ -19,7 +19,7 @@ one sig colA extends col {}
 one sig colB extends col {}
 one sig colC extends col {}
 one sig colD extends col {}
-one sig colE extends col {} -- disabled for performance reasons
+// one sig colE extends col {} -- disabled for performance reasons
 // one sig colF extends col {}
 // one sig colG extends col {}
 // one sig colH extends col {}
@@ -28,14 +28,13 @@ one sig row1 extends row {}
 one sig row2 extends row {}
 one sig row3 extends row {}
 one sig row4 extends row {}
-one sig row5 extends row {}
+// one sig row5 extends row {}
 // one sig row6 extends row {}
 // one sig row7 extends row {}
 // one sig row8 extends row {}
 
 -- We have squares that can optionally match to a piece occupying it.
 sig square {
-  var pc: lone piece,
   coord: set row -> col
 }
 
@@ -81,14 +80,6 @@ abstract sig Color {
 one sig Black extends Color {}
 one sig White extends Color {}
 
--- preds for color membership
-pred colorMembership { -- TODO UNSAT
-  all p: piece | {
-    // p in (WP + WN + WB + WR + WQ + WK) iff p in White.pieces
-    // p in (BP + BN + BB + BR + BQ + BK) iff p in Black.pieces
-  }
-}
-
 -- finds if two pieces are the same color
 pred isSameColor[p1: piece, p2: piece] {
   (p1 in Black.pieces and p2 in Black.pieces) or 
@@ -96,6 +87,15 @@ pred isSameColor[p1: piece, p2: piece] {
 }
 
 -- Helpers for finding square relations
+/* fun squaresPiece[s: square]: lone piece {
+  all p : piece | { p.sq = s => p }
+} */ 
+
+-- is there a piece 
+pred isPieceOnSquare[s: square] {
+  one p : piece | p.sq = s
+}
+
 fun prevRow[sq: square]: lone row {
   sq.coord.col.r_prev
 }
@@ -198,7 +198,7 @@ pred structural { -- solely focused on board dimensions
   -- bidirectional - this.next's prev = this
   all c1: col | all c2: col | {c1.c_next = c2 implies c2.c_prev = c1}
 
-  -- enforces 8x8 coordinates.
+  -- enforces coordinates.
   colA.c_next = colB
   colB.c_next = colC
   colC.c_next = colD
@@ -223,24 +223,11 @@ pred structural { -- solely focused on board dimensions
   -- diagonal relations were too computationally expensive to generate in advance.
 }
 
-pred piecesToSquares { -- ensures squares and pieces are one-to-one mapped
-  -- bidirectional mapping
-  all p: piece | all s: square {
-    s in p.sq implies p in s.pc
-  }
-
-  -- unique
-  all p: piece | {
-    lone pc.p
-  }
-}
-
 -- King related preds --------------------------
 pred validKings { -- should only and always have 2 kings.
   #(K) = 2
   all k: K | {
     some k.sq
-    some pc.k
   }
 }
 
@@ -303,6 +290,7 @@ pred NMoves[n: N] {
     }
   }
 }
+
 pred validMovesForKnight[a: square, n: N] {
   { n.sq.coord.col = a.coord.col.r_next and n.sq.coord[row] = (a.coord[row]).c_next.c_next } or 
   { n.sq.coord.col = a.coord.col.r_next and n.sq.coord[row] = (a.coord[row]).c_prev.c_prev } or 
@@ -344,14 +332,14 @@ pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own s
     r.sq.coord[row] in (a.coord[row]).^c_next => {
       -- set of intermediate pieces is empty 
       all s : square | s.coord[row] in ((a.coord[row]).^c_next & (r.sq.coord[row]).^c_prev) and (r.sq.coord.col = s.coord.col) => {
-        no s.pc
+        not isPieceOnSquare[s]
       } 
     } 
     -- if moving up the cols 
     a.coord[row] in (r.sq.coord[row]).^c_next => {
       -- set of intermediate pieces is empty 
       all s : square | s.coord[row] in ((a.coord[row]).^c_prev & (r.sq.coord[row]).^c_next) and (r.sq.coord.col = s.coord.col) => {
-        no s.pc
+        not isPieceOnSquare[s]
       } 
     }
   } 
@@ -361,14 +349,14 @@ pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own s
     r.sq.coord.col in a.coord.col.^r_next => {
       -- set of intermediate pieces is empty 
       all s : square | s.coord.col in ((a.coord.col.^r_next) & (r.sq.coord.col.^r_prev)) and (r.sq.coord[row] = s.coord[row]) => {
-        no s.pc
+        not isPieceOnSquare[s]
       }
     } 
     -- if moving up the rows 
     a.coord.col in r.sq.coord.col.^r_next => {
       -- set of intermediate pieces is empty 
       all s : square | s.coord.col in ((a.coord.col.^r_prev) & (r.sq.coord.col.^r_next)) and (r.sq.coord[row] = s.coord[row]) => {
-        no s.pc
+        not isPieceOnSquare[s]
       }
     }
   }
@@ -386,8 +374,7 @@ pred QMoves[q: Q] {
 
 --- General move-related preds --------------
 
--- also need to consider: white cannot move unless black moves b4 (before?), vice versa
--- KNOWN BUGS: 
+-- also need to consider: white cannot move unless black moves before, vice versa
 pred generalMove[p : piece] {
   -- some square before 
   some p.sq
@@ -395,12 +382,11 @@ pred generalMove[p : piece] {
   some p.sq' 
   -- valid move 
   p.sq' in p.moves
-  -- captured 
-  some s : square | (s = p.sq' and some s.pc) and (not isSameColor[s.pc, p]) => {
-    s.pc not in square.pc'
-    square.pc - s.pc = square.pc'
+  -- captured -- ASSUMPTION THAT THE OTHER SQUARE IS NOT THE SAME COLOR 
+  some s : square | (s = p.sq' and isPieceOnSquare[s]) => {
+    not isPieceOnSquare[s']
   } else {
-    square.pc = square.pc'
+    // ? 
   }
   all other : piece - p | not other.sq = p.sq' => {
     other.sq' = other.sq
@@ -419,12 +405,6 @@ pred allMoves {
   all k: K | { KMoves[k] }
 }
 
-pred validBoard { -- position legality 
-  // validKings
-  piecesToSquares
-  colorMembership
-}
-
 -- init state  
 pred init {
   some p: piece | {
@@ -434,7 +414,6 @@ pred init {
 
 -- traces 
 pred traces {
-  always { validBoard }
   always { one p: piece | generalMove[p] } 
 }
 
@@ -445,14 +424,7 @@ pred generatePuzzle {
     structural
     allMoves }
   traces
-  // always { validBoard }
-  // always { allMoves }
-  // B.sq.coord = row2->colB
-  // N.sq.coord = row3->colB
-  // R.sq.coord = row4->colB
-  // Q.sq.coord = row4->colA
-  // K.sq.coord = row2->colC
 }
 
--- generates a 5x5 board 
-run {generatePuzzle} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 5 piece, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
+-- generates a smaller board 
+run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 5 piece, exactly 1 BB, exactly 1 WN, exactly 1 WR, exactly 1 BQ, exactly 1 BK
