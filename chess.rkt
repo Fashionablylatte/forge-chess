@@ -32,8 +32,12 @@ one sig row8 extends row {}
 -- We have squares that can optionally match to a piece occupying it.
 sig square {
   var pc: lone piece,
-  coord: set row -> col
-  }
+  coord: set row -> col //,
+  // pColPRowDiag: lone square,
+  // pColNRowDiag: lone square,
+  // nColPRowDiag: lone square,
+  // nColNRowDiag: lone square
+}
 
 -- A piece optionally matches to a square that it occupies, plus any squares it can move to. 
 abstract sig piece {
@@ -44,7 +48,9 @@ abstract sig piece {
 -- These represent our chess pieces, with the letter corresponding to the piece name in algebraic notation (excepting pawns). 
 sig P extends piece {} -- pawn
 sig N extends piece {} -- knight
-sig B extends piece {} -- bishop
+sig B extends piece {
+  excluded: set square
+} -- bishop
 sig R extends piece {} -- rook
 sig Q extends piece {} -- queen
 sig K extends piece {} -- king
@@ -53,6 +59,84 @@ sig K extends piece {} -- king
 one sig Board {
   -- Each row, col pair maps to a cell
   places: set row -> col -> square
+}
+
+-- Helpers for finding square relations
+
+fun prevRow[sq: square]: lone row {
+  sq.coord.col.r_prev
+}
+
+fun nextRow[sq: square]: lone row {
+  sq.coord.col.r_next
+}
+
+fun prevCol[sq: square]: lone col {
+  (sq.coord[row]).c_prev
+}
+
+fun nextCol[sq: square]: lone col {
+  (sq.coord[row]).c_next
+}
+
+fun pcprDiag[sq: square]: lone square {
+  (prevCol[sq]).((prevRow[sq]).(Board.places)) 
+}
+
+fun pcnrDiag[sq: square]: lone square {
+  (prevCol[sq]).((nextRow[sq]).(Board.places)) 
+}
+
+fun ncprDiag[sq: square]: lone square {
+  (nextCol[sq]).((prevRow[sq]).(Board.places)) 
+}
+
+fun ncnrDiag[sq: square]: lone square {
+  (nextCol[sq]).((nextRow[sq]).(Board.places)) 
+}
+
+fun pcprDiags[sq: square]: set square {
+  pcprDiag[sq] + 
+  pcprDiag[pcprDiag[sq]] + 
+  pcprDiag[pcprDiag[pcprDiag[sq]]] + 
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]] + 
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]] + 
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]] + 
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]]]
+}
+
+fun pcnrDiags[sq: square]: set square {
+  pcnrDiag[sq] + 
+  pcnrDiag[pcnrDiag[sq]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[sq]]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]]]
+}
+
+fun ncnrDiags[sq: square]: set square {
+  ncnrDiag[sq] + 
+  ncnrDiag[ncnrDiag[sq]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[sq]]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]]]
+}
+
+fun ncprDiags[sq: square]: set square {
+  ncprDiag[sq] + 
+  ncprDiag[ncprDiag[sq]] + 
+  ncprDiag[ncprDiag[ncprDiag[sq]]] + 
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]] + 
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]] + 
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]] + 
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]]]
+}
+
+fun allDiags[sq: square]: set square {
+  pcprDiags[sq] + pcnrDiags[sq] + ncnrDiags[sq] + ncprDiags[sq]
 }
 
 pred structural { -- solely focused on board dimensions
@@ -100,7 +184,9 @@ pred structural { -- solely focused on board dimensions
   -- maps each square to its coords
   all sq: square | all r: row | all c: col | {
       r->c->sq in Board.places implies { r->c = sq.coord } 
-    }
+  }
+
+  -- diagonal relations were too computationally expensive to generate in advance.
 }
 
 pred piecesToSquares {
@@ -114,6 +200,17 @@ pred piecesToSquares {
     lone pc.p
   }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 pred validKings {
   #(K) = 2
@@ -147,20 +244,68 @@ pred moveK {
 
 }
 
+
+pred BMoves[b: B] {
+  // b.moves in allDiags[b] -- only diagonals are in consideration
+  all s: square | {
+    s in b.moves iff {
+      (s in pcprDiags[b.sq] and (no p: piece | {p.sq in pcprDiags[b.sq] and p.sq in ncnrDiags[s]})) or
+      (s in pcnrDiags[b.sq] and (no p: piece | {p.sq in pcnrDiags[b.sq] and p.sq in ncprDiags[s]})) or
+      (s in ncprDiags[b.sq] and (no p: piece | {p.sq in ncprDiags[b.sq] and p.sq in pcnrDiags[s]})) or
+      (s in ncnrDiags[b.sq] and (no p: piece | {p.sq in ncnrDiags[b.sq] and p.sq in pcprDiags[s]}))
+    }
+    // -- if a square is in diags... 
+    // s in allDiags[b] implies {
+    //   -- ... and has a piece, then...  TODO check that the bishop itself is not included (thx to allDiags)
+    //   (some s.piece) implies {
+    //     -- ... all squares past it are excluded. TODO check for team (capturing)
+    //     s in pcprDiag[b.sq] implies pcprDiag[s] not in b.moves
+    //     s in pcnrDiag[b.sq] implies pcnrDiag[s] not in b.moves
+    //     s in ncnrDiag[b.sq] implies ncnrDiag[s] not in b.moves
+    //     s in ncprDiag[b.sq] implies ncnrDiag[s] not in b.moves
+    //   }
+
+    //   -- ... and 
+    // }
+  }
+}
+
+// pred BExcluded[b: B] {
+//   all p: piece | {
+//     (not (p = b) and some p.sq) implies {
+//       b.excluded = 
+//         (p.sq in pcprDiag[b.sq] => pcprDiag[p.sq] else none) + 
+//         (p.sq in pcnrDiag[b.sq] => pcnrDiag[p.sq] else none) +
+//         (p.sq in ncnrDiag[b.sq] => ncnrDiag[p.sq] else none) +
+//         (p.sq in ncprDiag[b.sq] => ncnrDiag[p.sq] else none)
+
+//       // p.sq in pcprDiag[b.sq] implies pcprDiag[p.sq] in b.excluded
+//       // p.sq in pcnrDiag[b.sq] implies pcnrDiag[p.sq] in b.excluded
+//       // p.sq in ncnrDiag[b.sq] implies ncnrDiag[p.sq] in b.excluded
+//       // p.sq in ncprDiag[b.sq] implies ncnrDiag[p.sq] in b.excluded
+//       -- TODO if piece is in opposite team, also allow capture
+//       -- TODO if move exposes King to check, disallow.
+//     }
+//   }
+// }
+
+pred allMoves {
+  all b: B | { BMoves[b] }
+}
+
 pred init {
   all p: piece | {
     some p.sq
   }
 }
 
+
+
 pred generatePuzzle {
   structural
   init
   always { validBoard }
+  // always { allMoves }
 }
 
-fun topDiag[sq: square]: lone square {
-  { square } -- TODO
-}
-
-run {generatePuzzle and validBoard} for exactly 8 col, exactly 8 row, exactly 64 square, exactly 5 piece, exactly 2 K, exactly 1 B, exactly 1 Q, exactly 1 N
+run {generatePuzzle} for exactly 8 col, exactly 8 row, exactly 64 square, exactly 5 piece, exactly 2 K, exactly 1 B, exactly 1 Q, exactly 1 N
