@@ -42,20 +42,41 @@ abstract sig piece {
 }
 
 -- These represent our chess pieces, with the letter corresponding to the piece name in algebraic notation (excepting pawns). 
-sig P extends piece {} -- pawn
-sig N extends piece {} -- knight
-sig B extends piece {
-  excluded: set square
-} -- bishop
-sig R extends piece {} -- rook
-sig Q extends piece {} -- queen
-sig K extends piece {} -- king
+abstract sig P extends piece {} -- pawn
+abstract sig N extends piece {} -- knight
+abstract sig B extends piece {} -- bishop
+abstract sig R extends piece {} -- rook
+abstract sig Q extends piece {} -- queen
+abstract sig K extends piece {} -- king
+
+sig WP extends P {} -- white pawn
+sig WN extends N {} -- white knight
+sig WB extends B {} -- white bishop
+sig WR extends R {} -- white rook
+sig WQ extends Q {} -- white queen
+sig WK extends K {} -- white king
+
+sig BP extends P {} -- black pawn
+sig BN extends N {} -- black knight
+sig BB extends B {} -- black bishop
+sig BR extends R {} -- black rook
+sig BQ extends Q {} -- black queen
+sig BK extends K {} -- black king
 
 -- The board contains places that are rows to cols to squares. 
 one sig Board {
   -- Each row, col pair maps to a cell
   places: set row -> col -> square
 }
+
+abstract sig Color {
+  pieces: set pieces
+}
+
+one sig Black extends Color {}
+one sig White extends Color {}
+
+-- preds for color membership
 
 -- Helpers for finding square relations
 fun prevRow[sq: square]: lone row {
@@ -205,15 +226,37 @@ pred validKings { -- should only and always have 2 kings.
   }
 }
 
+pred KMoves[k : K] {
 
-pred KMoves[k: King]{
-  -- king is on some square
-  -- can go to all adjacent squares. i.e. nextrow, row, prevrow x nextcol, col, prevcol
-  -- ^ above method doesn't seem to extend to longer range pieces e.g. queen
+  -- King must be on the board currently
+  some k.sq
+    -- There is some square that the king can move to
+  all s : square | {
+    -- The square must be adjacent to the square of the king
+    -- Does not yet count for squares that are protected by an opposing piece
+    s in k.moves iff {
+      adjacentTo[k.sq, s]
+    }
+  }
 }
 
-pred moveK {
+-- Imagine that s1 is the square that remains stationary, and we check if s2 is in any of the 8 squares surrounding s1
+pred adjacentTo[s1 : square, s2 : square] {
+  -- If the row coordinates are the same, the col coordinate must either be the next or prev
+  s1.coord.col = s2.coord.col implies {
+    nextCol[s1] = s2.coord[row] or prevCol[s1] = s2.coord[row]
+  }
 
+  -- If the col coordinates are the same, the row coordinate must either be the next or prev
+  s1.coord[row] = s2.coord[row] implies {
+    nextRow[s1] = s2.coord.col or prevRow[s1] = s2.coord.col
+  }
+
+  -- If neither the row or col coordinates are the same, then the row coord must be either the next or prev, and the col coord must also be either the next or prev
+  (s1.coord.col != s2.coord.col && s1.coord[row] != s2.coord[row]) implies {
+    nextRow[s1] = s2.coord.col or prevRow[s1] = s2.coord.col
+    nextCol[s1] = s2.coord[row] or prevCol[s1] = s2.coord[row]
+  }
 }
 
 -- Bishop related preds --------------------------
@@ -342,8 +385,8 @@ pred allMoves {
   all n: N | { NMoves[n] }
   all r: R | { RMoves[r] }
   all q: Q | { QMoves[q] }
+  all k: K | { KMoves[k] }
 }
-
 
 pred validBoard { -- position legality 
   // validKings
@@ -369,6 +412,7 @@ pred generatePuzzle {
   N.sq.coord = row3->colB
   R.sq.coord = row4->colB
   Q.sq.coord = row4->colA
+  K.sq.coord = row2->colC
 }
 
-run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 4 piece, exactly 1 B, exactly 1 N, exactly 1 R, exactly 1 Q
+run {generatePuzzle} for exactly 4 col, exactly 4 row, exactly 16 square, exactly 5 piece, exactly 1 B, exactly 1 N, exactly 1 R, exactly 1 Q, exactly 1 K
