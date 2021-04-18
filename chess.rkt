@@ -46,26 +46,26 @@ abstract sig piece {
 }
 
 -- These represent our chess pieces, with the letter corresponding to the piece name in algebraic notation (excepting pawns). 
-abstract sig P extends piece {} -- pawn
-abstract sig N extends piece {} -- knight
-abstract sig B extends piece {} -- bishop
-abstract sig R extends piece {} -- rook
-abstract sig Q extends piece {} -- queen
-abstract sig K extends piece {} -- king
+sig P extends piece {} -- pawn
+sig N extends piece {} -- knight
+sig B extends piece {} -- bishop
+sig R extends piece {} -- rook
+sig Q extends piece {} -- queen
+sig K extends piece {} -- king
 
-sig WP extends P {} -- white pawn
-sig WN extends N {} -- white knight
-sig WB extends B {} -- white bishop
-sig WR extends R {} -- white rook
-sig WQ extends Q {} -- white queen
-sig WK extends K {} -- white king
+// sig WP extends P {} -- white pawn
+// sig WN extends N {} -- white knight
+// sig WB extends B {} -- white bishop
+// sig WR extends R {} -- white rook
+// sig WQ extends Q {} -- white queen
+// sig WK extends K {} -- white king
 
-sig BP extends P {} -- black pawn
-sig BN extends N {} -- black knight
-sig BB extends B {} -- black bishop
-sig BR extends R {} -- black rook
-sig BQ extends Q {} -- black queen
-sig BK extends K {} -- black king
+// sig BP extends P {} -- black pawn
+// sig BN extends N {} -- black knight
+// sig BB extends B {} -- black bishop
+// sig BR extends R {} -- black rook
+// sig BQ extends Q {} -- black queen
+// sig BK extends K {} -- black king
 
 -- Represents color of pieces 
 abstract sig Color {
@@ -81,9 +81,13 @@ one sig Turn {
 
 -- preds for color membership
 pred colorMembership { -- TODO UNSAT
-  all p: piece | {
-    // p in (WP + WN + WB + WR + WQ + WK) iff p in White.pieces
-    // p in (BP + BN + BB + BR + BQ + BK) iff p in Black.pieces
+  // all p: piece | {
+  //   p in (WP + WN + WB + WR + WQ + WK) implies p in White.pieces
+  //   // p in (BP + BN + BB + BR + BQ + BK) implies p in Black.pieces
+  // }
+  no White.pieces & Black.pieces
+  all p : piece | {
+    p in (Color.pieces)
   }
 }
 
@@ -289,23 +293,6 @@ pred kingSafety {
   }
 }
 
-pred checkmate {
-  some k : K | {
-    -- A state where the king is under attack
-    some p1 : piece {
-      pc.k in p1.moves
-    }
-    -- And afterwards the king is still under attack and has no moves
-    -- Would this be able 
-    after {
-      no k.moves
-      some p2 : piece {
-        pc.k in p2.moves
-      }
-    }
-  }
-}
-
 pred stalemate {
   some k : K | {
     some p1 : piece {
@@ -318,25 +305,16 @@ pred stalemate {
   }
 }
 
-// pred twoChecks {
-//   some k : K | {
-//     pc.k in --Set of opposing color moves
-//     after pc.k in --set of opposing color moves
-//   }
-// }
-
-pred inCheck{
-  some k : K | {
-    some p : piece | {
+pred inCheck[k : K]{
+  some p : piece | {
       pc.k in p.moves
       not isSameColor[k, p]
     }
-  }
 }
 
-pred twoChecks {
-  inCheck
-  after inCheck
+pred twoChecks[k : K] {
+  inCheck[k]
+  after inCheck[k]
 }
 
 pred adjacentKings {
@@ -353,10 +331,12 @@ pred KMoves[k : K] {
   all s : square | {
     s in k.moves iff {
       adjacentTo[pc.k, s]
-      // not isSameColor[k, s.pc]
+      some s.pc implies not isSameColor[k, s.pc]
       no p : piece | {
         s in p.moves
+        not isSameColor[k, p]
       }
+      // s not in (Color - (pieces.k)).pieces.(moves')
     }
   }
 }
@@ -366,6 +346,7 @@ pred BMoves[b: B] {
   -- need to add legality for king safety. If king in danger, none, else, ...?
   all s: square | { -- For all squares, ...
     s in b.moves iff { -- square is in bishop's legal moves iff ...
+      some s.pc implies not isSameColor[b, s.pc]
       validMovesForBishop[s, b]
     }
   }
@@ -383,6 +364,7 @@ pred validMovesForBishop[a: square, b: piece] {  -- should be B, but piece to al
 pred NMoves[n: N] {
   all s: square | {
     s in n.moves iff {
+      some s.pc implies not isSameColor[n, s.pc]
       validMovesForKnight[s, n]
     }
   }
@@ -403,6 +385,7 @@ pred validMovesForKnight[a: square, n: N] {
 pred RMoves[r: R] {
   all s: square | {
     s in r.moves iff {
+      some s.pc implies not isSameColor[r, s.pc]
       validMovesForRook[s, r]
     }
   }
@@ -464,6 +447,7 @@ pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own s
 pred QMoves[q: Q] {
   all s: square | {
     s in q.moves iff {
+      some s.pc implies not isSameColor[q, s.pc]
       validMovesForRook[s, q] or validMovesForBishop[s, q]
     }
   }
@@ -495,24 +479,37 @@ pred generalMove[p : piece] {
   }
 }
 
-// pred capture[p1 : piece, p2 : piece] {
-//   some s.pc
-//   not isSameColor[p1, p2]
-//   pc' = pc - (pc.p1 -> p1) - (pc.p2 -> p2) + (pc.p2 -> p1)
-// }
-
-// pred peacefulMove[p : piece, s : square] {
-//   no s.pc
-//   pc' = pc - (pc.p -> p) + (s -> pc.p)
-// }
-
-// pred generalMove[p : piece] {
-//   some pc.p
-//   some (pc').p
-//   some s : square | {
-//     capture[p, s.pc] or peacefulMove[p, s]
-//   }
-// }
+pred checkmate {
+  some k : K | {
+    --TODO: Check king color
+    -- A state where the king is under attack
+    // no k.moves
+    some p1 : piece {
+      not isSameColor[k, p1]
+      pc.k in p1.moves
+      pc.p1 not in (pieces.k).pieces.moves
+      no p3 : piece | {
+        generalMove[p3] implies after not inCheck[k]
+        isSameColor[k, p3]
+      }
+    }
+    -- To block:
+      -- Attacking piece is knight or there is no piece that can get between that piece and the king square
+      -- Same way we check for obstructions (expensive)
+      -- p1 in the after state, p1 is no longer attacking k (temporality issue)
+      -- Not a pawn or a knight
+      -- One of the moves of some piece is a square in the set of moves of the attacking piece and 
+    -- And afterwards the king is still under attack and has no moves
+    -- Would this be able 
+    after {
+      no k.moves
+      some p2 : piece {
+        not isSameColor[k, p2]
+        pc.k in p2.moves
+      }
+    }
+  }
+}
 
 -- ensures all pieces maintain valid moves 
 pred allMoves {
@@ -548,38 +545,37 @@ pred init {
 
 -- turns
 pred turns {
-  whiteMove implies { after blackMove }
-  blackMove implies { after whiteMove }
+  whiteMove implies { after (blackMove and not whiteMove)}
+  blackMove implies { after (whiteMove and not blackMove)}
 }
 
 -- traces 
 pred traces {
   init
-  turns
+  // validBoard
+  // turns
   always {
+    colorMembership
     structural
     allMoves
-    not twoChecks
   }
-
   eventually checkmate
 }
 
 -- generates a chess puzzle 
-// pred generatePuzzle {
-//   init
-//   traces
-//   always {
-//     structural
-//     allMoves }
-//   // always { validBoard }
-//   // always { allMoves }
-//   // B.sq.coord = row2->colB
-//   // N.sq.coord = row3->colB
-//   // R.sq.coord = row4->colB
-//   // Q.sq.coord = row4->colA
-//   // K.sq.coord = row2->colC
-// }
+pred generatePuzzle {
+  traces until checkmate
+  always {
+    structural
+    allMoves }
+  // always { validBoard }
+  // always { allMoves }
+  // B.sq.coord = row2->colB
+  // N.sq.coord = row3->colB
+  // R.sq.coord = row4->colB
+  // Q.sq.coord = row4->colA
+  // K.sq.coord = row2->colC
+}
 
 pred validKingMoves {
   all k : K | {
@@ -587,5 +583,13 @@ pred validKingMoves {
   }
 }
 
+pred scenario {
+  #(White.pieces & R) = 2
+  #(Black.pieces & K) = 1
+  all r : R | {
+    pc.r.coord.col = row1
+  }
+}
+
 -- generates a 5x5 board 
-run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 2 WR, exactly 1 BK
+run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 2 R, exactly 1 K
