@@ -259,6 +259,48 @@ pred structural { -- solely focused on board dimensions
   // row6.r_next = row7
   // row7.r_next = row8
 }
+-- Pawn related preds --------------------------
+pred forwardDiagonal[p: P, s : square] {
+  some s.pc
+  p in White.pieces implies {
+    nextRow[pc.p] = s.coord.col
+  } else {
+    prevRow[pc.p] = s.coord.col
+  }
+  nextCol[pc.p] = s.coord[row] or prevCol[pc.p] = s.coord[row]
+}
+
+pred oneInFront[p : P, s : square] {
+  no s.pc
+  pc.p.coord[row] = s.coord[row]
+  p in White.pieces implies {
+    nextRow[pc.p] = s.coord.col
+  } else {
+    prevRow[pc.p] = s.coord.col
+  }
+}
+
+pred twoInFront[p : P, s : square] {
+  no s.pc
+  pc.p.coord[row] = s.coord[row]
+  p in White.pieces implies {
+    pc.p.coord[row] = row2
+    nextRow[pc.p].r_next = s.coord.col
+  } else {
+    // MUST CHANGE FOR LARGER BOARDS -----------------------------------------
+    pc.p.coord[row] = row4
+    prevRow[pc.p].r_prev = s.coord.col
+  }
+}
+
+pred PMoves[p : P] {
+  some pc.p
+  all s : square | {
+    s in p.moves iff {
+      oneInFront[p, s] or twoInFront[p, s] or forwardDiagonal[p, s]
+    }
+  }
+}
 
 -- King related preds --------------------------
 pred validKings { -- should only and always have 2 kings.
@@ -513,6 +555,7 @@ pred checkmate {
 
 -- ensures all pieces maintain valid moves 
 pred allMoves {
+  all p: P | { PMoves[p]}
   all b: B | { BMoves[b] }
   all n: N | { NMoves[n] }
   all r: R | { RMoves[r] }
@@ -559,7 +602,7 @@ pred traces {
     structural
     allMoves
   }
-  eventually checkmate
+  // eventually checkmate
 }
 
 -- generates a chess puzzle 
@@ -586,10 +629,12 @@ pred validKingMoves {
 pred scenario {
   #(White.pieces & R) = 2
   #(Black.pieces & K) = 1
+  #(Black.pieces & P) = 1
+  #(White.pieces & P) = 1
   all r : R | {
     pc.r.coord.col = row1
   }
 }
 
 -- generates a 5x5 board 
-run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 2 R, exactly 1 K
+run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 5 piece, exactly 2 R, exactly 1 K, exactly 2 P

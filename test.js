@@ -16,54 +16,54 @@ function make_piece(url) {
 
 function printValue(row, col, xoffset, yoffset, value) {
     switch(value) {
-      case "BN0":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'http://clipart-library.com/images/8TGKgnpTa.png')
-          .attr("x", row*75 + xoffset*1)
-          .attr("y", col*75 + yoffset*1)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
-      case "WN0":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'http://clipart-library.com/images/pio5AeRaT.jpg')
-          .attr("x", row*75 + xoffset*1)
-          .attr("y", col*75 + yoffset*1)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
-      case "WR0":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'http://clipart-library.com/images/8cxXrazcp.jpg')
-          .attr("x", row*66 + xoffset*1)
-          .attr("y", col*60 + yoffset*1)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
-      case "BB0":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://www.pinclipart.com/picdir/big/100-1006999_clipart-silhouette-chess-piece-remix-bishop-alfil-chess.png')
-          .attr("x", row*60 + xoffset*1)
-          .attr("y", col*60 + yoffset*1)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
-      case "BQ0":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://www.clipartmax.com/png/full/204-2042941_clipart-queen-chess-piece-vector.png')
-          .attr("x", row*60 + xoffset*1)
-          .attr("y", col*60 + yoffset*1)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
-      case "BK0":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'http://clipart-library.com/img/1985567.png')
-          .attr("x", row*58 + xoffset*1)
-          .attr("y", col*65 + yoffset*1)
-          .attr('width', 50)
-          .attr('height', 50);
-         break; 
+//       case "BN0":
+//         var myimage = d3.select(svg).append('image')
+//           .attr('xlink:href', 'http://clipart-library.com/images/8TGKgnpTa.png')
+//           .attr("x", row*75 + xoffset*1)
+//           .attr("y", col*75 + yoffset*1)
+//           .attr('width', 50)
+//           .attr('height', 50);
+//          break;
+//       case "WN0":
+//         var myimage = d3.select(svg).append('image')
+//           .attr('xlink:href', 'http://clipart-library.com/images/pio5AeRaT.jpg')
+//           .attr("x", row*75 + xoffset*1)
+//           .attr("y", col*75 + yoffset*1)
+//           .attr('width', 50)
+//           .attr('height', 50);
+//          break;
+//       case "WR0":
+//         var myimage = d3.select(svg).append('image')
+//           .attr('xlink:href', 'http://clipart-library.com/images/8cxXrazcp.jpg')
+//           .attr("x", row*66 + xoffset*1)
+//           .attr("y", col*60 + yoffset*1)
+//           .attr('width', 50)
+//           .attr('height', 50);
+//          break;
+//       case "BB0":
+//         var myimage = d3.select(svg).append('image')
+//           .attr('xlink:href', 'https://www.pinclipart.com/picdir/big/100-1006999_clipart-silhouette-chess-piece-remix-bishop-alfil-chess.png')
+//           .attr("x", row*60 + xoffset*1)
+//           .attr("y", col*60 + yoffset*1)
+//           .attr('width', 50)
+//           .attr('height', 50);
+//          break;
+//       case "BQ0":
+//         var myimage = d3.select(svg).append('image')
+//           .attr('xlink:href', 'https://www.clipartmax.com/png/full/204-2042941_clipart-queen-chess-piece-vector.png')
+//           .attr("x", row*60 + xoffset*1)
+//           .attr("y", col*60 + yoffset*1)
+//           .attr('width', 50)
+//           .attr('height', 50);
+//          break;
+//       case "BK0":
+//         var myimage = d3.select(svg).append('image')
+//           .attr('xlink:href', 'http://clipart-library.com/img/1985567.png')
+//           .attr("x", row*58 + xoffset*1)
+//           .attr("y", col*65 + yoffset*1)
+//           .attr('width', row*40)
+//           .attr('height', 50);
+//          break; 
       default:
           d3.select(svg)
             .append("text")
@@ -125,7 +125,6 @@ function printBoard(startRow, startCol) {
   
 }
 
-console.log(pc)
 printBoard(row5, colA)
 
 
