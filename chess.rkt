@@ -2,10 +2,10 @@
 
 option problem_type temporal 
 option max_tracelength 3 -- NEEDED! default is 5. need to be able to find the whole lasso.
-// option solver MiniSatProver
-// option logtranslation 1
-// option coregranularity 1
-// option core_minimization rce
+option solver MiniSatProver
+option logtranslation 1
+option coregranularity 1
+option core_minimization rce
 
 /*
  * Logic for Systems Final Project - Chess Model
@@ -266,6 +266,13 @@ pred validKings { -- should only and always have 2 kings.
   all k: K | {
     some pc.k
   }
+  -- TODO enable later
+  one k: K | {
+    k in White.pieces
+  }
+  one k: K | {
+    k in Black.pieces
+  }
 }
 
 -- Imagine that s1 is the square that remains stationary, and we check if s2 is in any of the 8 squares surrounding s1
@@ -293,7 +300,7 @@ pred kingSafety {
   }
 }
 
-pred stalemate {
+pred stalemate { -- TODO implement later optionally
   some k : K | {
     some p1 : piece {
       pc.k in p1.moves
@@ -317,7 +324,7 @@ pred twoChecks[k : K] {
   after inCheck[k]
 }
 
-pred adjacentKings {
+pred adjacentKings { -- TODO not sure this is necessary by typical king safety rules. 
   some k1 : K | {
     some k2 : K - k1 | {
       adjacentTo[k1, k2]
@@ -465,18 +472,24 @@ pred generalMove[p : piece] {
   -- valid move 
   p.sq' in p.moves
   -- captured 
-  some s : square | (s = p.sq' and some s.pc) and (not isSameColor[s.pc, p]) => {
-    s.pc not in square.pc'
-    square.pc - s.pc = square.pc'
-  } else {
-    square.pc = square.pc'
+  some s : square | { ((s = p.sq' and some s.pc) and (not isSameColor[s.pc, p])) => {
+      s.pc not in square.pc'
+      square.pc - s.pc = square.pc'
+    } else {
+      square.pc = square.pc'
+    }
   }
-  all other : piece - p | not other.sq = p.sq' => {
-    other.sq' = other.sq
+  all other : piece - p | {
+    not other.sq = p.sq' => {
+      other.sq' = other.sq
+    }
+    other.sq = p.sq' => {
+      // other.sq' = other.sq or no other.sq' -- TODO what's going on here? 
+      no other.sq'
+    }
   }
-  all other : piece - p | other.sq = p.sq' => {
-    other.sq' = other.sq or no other.sq'
-  }
+  -- TODO verify new addition. Prevents king from being attacked after move.
+  after { no k: K | { isSameColor[k, p] and inCheck[k] }}
 }
 
 pred checkmate {
@@ -485,12 +498,13 @@ pred checkmate {
     -- A state where the king is under attack
     // no k.moves
     some p1 : piece {
-      not isSameColor[k, p1]
-      pc.k in p1.moves
-      pc.p1 not in (pieces.k).pieces.moves
-      no p3 : piece | {
-        generalMove[p3] implies after not inCheck[k]
-        isSameColor[k, p3]
+      not isSameColor[k, p1] -- piece is not same color
+      pc.k in p1.moves -- king under attack
+      // not generalMove[k] -- king can't move anywhere
+      // pc.p1 not in (pieces.k).pieces.moves -- attacking piece not capturable
+      no p3 : piece | { -- no piece that can move and end the threat
+        generalMove[p3] //implies after not inCheck[k]
+        // isSameColor[k, p3] -- should now be covered in generalMove itself + turn restriction?
       }
     }
     -- To block:
@@ -503,12 +517,18 @@ pred checkmate {
     -- Would this be able 
     after {
       no k.moves
-      some p2 : piece {
-        not isSameColor[k, p2]
-        pc.k in p2.moves
-      }
+      // some p2 : piece {
+      //   not isSameColor[k, p2]
+      //   pc.k in p2.moves
+      // }
     }
   }
+}
+
+-- game over 
+pred gameOver {
+  sq = sq'
+  pc = pc'
 }
 
 -- ensures all pieces maintain valid moves 
@@ -534,6 +554,15 @@ pred blackMove {
   one p: piece | { generalMove[p] and p in Black.pieces }
 }
 
+pred checkAndNotMove {
+  whiteMove implies {
+    no k: K | { k in Black.pieces and inCheck[k] }
+  }
+  blackMove implies {
+    no k: K | { k in White.pieces and inCheck[k] }
+  }
+}
+
 -- init state
 pred init {
   not checkmate
@@ -545,37 +574,48 @@ pred init {
 
 -- turns
 pred turns {
-  whiteMove implies { after (blackMove and not whiteMove)}
-  blackMove implies { after (whiteMove and not blackMove)}
+  whiteMove implies { after ((blackMove and not whiteMove))}
+  blackMove implies { after ((whiteMove and not blackMove))}
 }
 
 -- traces 
 pred traces {
   init
-  // validBoard
-  // turns
+  validKings
   always {
     colorMembership
     structural
     allMoves
+    checkAndNotMove
   }
-  eventually checkmate
+  turns
+  // turns
+  // after turns
+  // after blackMove
+  // after after whiteMove
+  // after turns
+  // after after turns
+  // turns until gameOver
+  // eventually checkmate
+  // checkmate implies gameOver
+  // turns// until checkmate
 }
 
--- generates a chess puzzle 
-pred generatePuzzle {
-  traces until checkmate
-  always {
-    structural
-    allMoves }
-  // always { validBoard }
-  // always { allMoves }
-  // B.sq.coord = row2->colB
-  // N.sq.coord = row3->colB
-  // R.sq.coord = row4->colB
-  // Q.sq.coord = row4->colA
-  // K.sq.coord = row2->colC
-}
+// -- generates a chess puzzle 
+// pred generatePuzzle {
+//   // traces until checkmate
+//   checkmate implies gameOver
+//   always {
+//     structural
+//     allMoves }
+//   // always { validBoard }
+//   // always { allMoves }
+//   // B.sq.coord = row2->colB
+//   // N.sq.coord = row3->colB
+//   // R.sq.coord = row4->colB
+//   // Q.sq.coord = row4->colA
+//   // K.sq.coord = row2->colC
+// }
 
 pred validKingMoves {
   all k : K | {
@@ -591,5 +631,5 @@ pred scenario {
   }
 }
 
--- generates a 5x5 board 
-run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 2 R, exactly 1 K
+-- generates a standard board 
+run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K
