@@ -47,6 +47,7 @@ abstract sig piece {
 
 -- These represent our chess pieces, with the letter corresponding to the piece name in algebraic notation (excepting pawns). 
 sig R extends piece {} -- rook
+sig N extends piece {} -- knight
 sig K extends piece {} -- king
 
 -- Represents color of pieces 
@@ -217,18 +218,6 @@ pred kingSafety {
   }
 }
 
-pred stalemate { -- TODO implement later optionally
-  some k : K | {
-    some p1 : piece {
-      pc.k in p1.moves
-    }
-    after {
-      -- If the king is white, there are no white moves
-      -- If the king is black, there are no black moves
-    }
-  }
-}
-
 pred inCheck[k : K]{
   some p : piece | {
       pc.k in p.moves
@@ -241,13 +230,13 @@ pred twoChecks[k : K] {
   after inCheck[k]
 }
 
-pred adjacentKings { -- TODO not sure this is necessary by typical king safety rules. 
-  some k1 : K | {
-    some k2 : K - k1 | {
-      adjacentTo[k1, k2]
-    }
-  }
-}
+// pred noAdjacentKings[] { 
+//   some k1 : K | {
+//     some k2 : K - k1 | {
+//       adjacentTo[k1, k2]
+//     }
+//   }
+// }
 
 -- King must be on the board
 pred KMoves[k : K] {
@@ -255,6 +244,7 @@ pred KMoves[k : K] {
   all s : square | {
     s in k.moves iff {
       adjacentTo[pc.k, s]
+      no k2 : K - k | { adjacentTo[s, pc.k2] }
       some s.pc implies not isSameColor[k, s.pc]
       no p : piece | {
         s in p.moves
@@ -327,6 +317,27 @@ pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own s
 }
 
 
+-- Knight related preds ------------------------------
+pred NMoves[n: N] {
+  all s: square | {
+    s in n.moves iff {
+      some s.pc implies not isSameColor[n, s.pc]
+      validMovesForKnight[s, n]
+    }
+  }
+}
+
+pred validMovesForKnight[a: square, n: N] {
+  { pc.n.coord.col = a.coord.col.r_next and pc.n.coord[row] = (a.coord[row]).c_next.c_next } or 
+  { pc.n.coord.col = a.coord.col.r_next and pc.n.coord[row] = (a.coord[row]).c_prev.c_prev } or 
+  { pc.n.coord.col = a.coord.col.r_prev and pc.n.coord[row] = (a.coord[row]).c_next.c_next } or 
+  { pc.n.coord.col = a.coord.col.r_prev and pc.n.coord[row] = (a.coord[row]).c_prev.c_prev } or 
+  { pc.n.coord[row] = (a.coord[row]).c_next and pc.n.coord.col = a.coord.col.r_next.r_next } or 
+  { pc.n.coord[row] = (a.coord[row]).c_next and pc.n.coord.col = a.coord.col.r_prev.r_prev } or 
+  { pc.n.coord[row] = (a.coord[row]).c_prev and pc.n.coord.col = a.coord.col.r_next.r_next } or 
+  { pc.n.coord[row] = (a.coord[row]).c_prev and pc.n.coord.col = a.coord.col.r_prev.r_prev }
+}
+
 --- General move-related preds --------------
 
 -- also need to consider: white cannot move unless black moves b4 (before?), vice versa
@@ -374,6 +385,7 @@ pred checkmate {
         // isSameColor[k, p3] -- should now be covered in generalMove itself + turn restriction?
       }
     }
+    no k.moves
     -- To block:
       -- Attacking piece is knight or there is no piece that can get between that piece and the king square
       -- Same way we check for obstructions (expensive)
@@ -382,13 +394,6 @@ pred checkmate {
       -- One of the moves of some piece is a square in the set of moves of the attacking piece and 
     -- And afterwards the king is still under attack and has no moves
     -- Would this be able 
-    after {
-      no k.moves
-      // some p2 : piece {
-      //   not isSameColor[k, p2]
-      //   pc.k in p2.moves
-      // }
-    }
   }
 }
 
@@ -402,6 +407,7 @@ pred gameOver {
 pred allMoves {
   all r: R | { RMoves[r] }
   all k: K | { KMoves[k] }
+  all n: N | { NMoves[n] }
 }
 
 pred whiteMove {
@@ -464,4 +470,5 @@ pred scenario {
 }
 
 -- generates a standard board 
-run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K
+// run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 N, exactly 2 K -- unsat because 1 N checkmate impossible.
+run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 R, exactly 2 K
