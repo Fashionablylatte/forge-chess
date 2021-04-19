@@ -48,6 +48,7 @@ abstract sig piece {
 -- These represent our chess pieces, with the letter corresponding to the piece name in algebraic notation (excepting pawns). 
 sig R extends piece {} -- rook
 sig N extends piece {} -- knight
+sig B extends piece {} -- bishop
 sig K extends piece {} -- king
 
 -- Represents color of pieces 
@@ -108,6 +109,50 @@ fun ncprDiag[sq: square]: lone square {
 
 fun ncnrDiag[sq: square]: lone square {
   (coord.((sq.coord[row]).c_next)).(sq.coord.col.r_next)
+}
+
+fun pcprDiags[sq: square]: set square {
+  pcprDiag[sq] + 
+  pcprDiag[pcprDiag[sq]] + 
+  pcprDiag[pcprDiag[pcprDiag[sq]]] + 
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]] + 
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]] + 
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]] + 
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]]]
+}
+
+fun pcnrDiags[sq: square]: set square {
+  pcnrDiag[sq] + 
+  pcnrDiag[pcnrDiag[sq]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[sq]]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]] + 
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]]]
+}
+
+fun ncnrDiags[sq: square]: set square {
+  ncnrDiag[sq] + 
+  ncnrDiag[ncnrDiag[sq]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[sq]]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]] + 
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]]]
+}
+
+fun ncprDiags[sq: square]: set square {
+  ncprDiag[sq] + 
+  ncprDiag[ncprDiag[sq]] + 
+  ncprDiag[ncprDiag[ncprDiag[sq]]] + 
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]] + 
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]] + 
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]] + 
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]]]
+}
+
+fun allDiags[sq: square]: set square {
+  pcprDiags[sq] + pcnrDiags[sq] + ncnrDiags[sq] + ncprDiags[sq]
 }
 
 -- STRUCTURE + VALIDITY ----------------------
@@ -338,6 +383,25 @@ pred validMovesForKnight[a: square, n: N] {
   { pc.n.coord[row] = (a.coord[row]).c_prev and pc.n.coord.col = a.coord.col.r_prev.r_prev }
 }
 
+-- Bishop related preds --------------------------
+pred BMoves[b: B] {
+  -- need to add legality for king safety. If king in danger, none, else, ...?
+  all s: square | { -- For all squares, ...
+    s in b.moves iff { -- square is in bishop's legal moves iff ...
+      some s.pc implies not isSameColor[b, s.pc]
+      validMovesForBishop[s, b]
+    }
+  }
+}
+
+pred validMovesForBishop[a: square, b: piece] {  -- should be B, but piece to allow reuse with Queen 
+  -- true for square a if it is on a diagonal square that is not blocked
+    (a in pcprDiags[pc.b] and (no p: piece | {pc.p in pcprDiags[pc.b] and pc.p in ncnrDiags[a]})) or
+    (a in pcnrDiags[pc.b] and (no p: piece | {pc.p in pcnrDiags[pc.b] and pc.p in ncprDiags[a]})) or
+    (a in ncprDiags[pc.b] and (no p: piece | {pc.p in ncprDiags[pc.b] and pc.p in pcnrDiags[a]})) or
+    (a in ncnrDiags[pc.b] and (no p: piece | {pc.p in ncnrDiags[pc.b] and pc.p in pcprDiags[a]}))
+}
+
 --- General move-related preds --------------
 
 -- also need to consider: white cannot move unless black moves b4 (before?), vice versa
@@ -408,6 +472,7 @@ pred allMoves {
   all r: R | { RMoves[r] }
   all k: K | { KMoves[k] }
   all n: N | { NMoves[n] }
+  all b: B | { BMoves[b] }
 }
 
 pred whiteMove {
@@ -471,4 +536,4 @@ pred scenario {
 
 -- generates a standard board 
 // run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 N, exactly 2 K -- unsat because 1 N checkmate impossible.
-run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 R, exactly 2 K
+run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 B, exactly 2 K
