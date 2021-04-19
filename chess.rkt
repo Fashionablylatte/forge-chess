@@ -1,7 +1,7 @@
 #lang forge
 
 option problem_type temporal 
-option max_tracelength 3 -- NEEDED! default is 5. need to be able to find the whole lasso.
+option max_tracelength 5 -- NEEDED! default is 5. need to be able to find the whole lasso.
 option solver MiniSatProver
 option logtranslation 1
 option coregranularity 1
@@ -46,26 +46,8 @@ abstract sig piece {
 }
 
 -- These represent our chess pieces, with the letter corresponding to the piece name in algebraic notation (excepting pawns). 
-sig P extends piece {} -- pawn
-sig N extends piece {} -- knight
-sig B extends piece {} -- bishop
 sig R extends piece {} -- rook
-sig Q extends piece {} -- queen
 sig K extends piece {} -- king
-
-// sig WP extends P {} -- white pawn
-// sig WN extends N {} -- white knight
-// sig WB extends B {} -- white bishop
-// sig WR extends R {} -- white rook
-// sig WQ extends Q {} -- white queen
-// sig WK extends K {} -- white king
-
-// sig BP extends P {} -- black pawn
-// sig BN extends N {} -- black knight
-// sig BB extends B {} -- black bishop
-// sig BR extends R {} -- black rook
-// sig BQ extends Q {} -- black queen
-// sig BK extends K {} -- black king
 
 -- Represents color of pieces 
 abstract sig Color {
@@ -80,11 +62,7 @@ one sig Turn {
 }
 
 -- preds for color membership
-pred colorMembership { -- TODO UNSAT
-  // all p: piece | {
-  //   p in (WP + WN + WB + WR + WQ + WK) implies p in White.pieces
-  //   // p in (BP + BN + BB + BR + BQ + BK) implies p in Black.pieces
-  // }
+pred colorMembership {
   no White.pieces & Black.pieces
   all p : piece | {
     p in (Color.pieces)
@@ -129,67 +107,6 @@ fun ncprDiag[sq: square]: lone square {
 
 fun ncnrDiag[sq: square]: lone square {
   (coord.((sq.coord[row]).c_next)).(sq.coord.col.r_next)
-}
---
-
-// fun pcprDiag[sq: square]: lone square {
-//   (prevCol[sq]).((prevRow[sq]).(Board.places)) 
-// }
-
-// fun pcnrDiag[sq: square]: lone square {
-//   (prevCol[sq]).((nextRow[sq]).(Board.places)) 
-// }
-
-// fun ncprDiag[sq: square]: lone square {
-//   (nextCol[sq]).((prevRow[sq]).(Board.places)) 
-// }
-
-// fun ncnrDiag[sq: square]: lone square {
-//   (nextCol[sq]).((nextRow[sq]).(Board.places)) 
-// }
-
-fun pcprDiags[sq: square]: set square {
-  pcprDiag[sq] + 
-  pcprDiag[pcprDiag[sq]] + 
-  pcprDiag[pcprDiag[pcprDiag[sq]]] + 
-  pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]] + 
-  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]] + 
-  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]] + 
-  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]]]
-}
-
-fun pcnrDiags[sq: square]: set square {
-  pcnrDiag[sq] + 
-  pcnrDiag[pcnrDiag[sq]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[sq]]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]]]
-}
-
-fun ncnrDiags[sq: square]: set square {
-  ncnrDiag[sq] + 
-  ncnrDiag[ncnrDiag[sq]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[sq]]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]]]
-}
-
-fun ncprDiags[sq: square]: set square {
-  ncprDiag[sq] + 
-  ncprDiag[ncprDiag[sq]] + 
-  ncprDiag[ncprDiag[ncprDiag[sq]]] + 
-  ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]] + 
-  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]] + 
-  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]] + 
-  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]]]
-}
-
-fun allDiags[sq: square]: set square {
-  pcprDiags[sq] + pcnrDiags[sq] + ncnrDiags[sq] + ncprDiags[sq]
 }
 
 -- STRUCTURE + VALIDITY ----------------------
@@ -348,46 +265,6 @@ pred KMoves[k : K] {
   }
 }
 
--- Bishop related preds --------------------------
-pred BMoves[b: B] {
-  -- need to add legality for king safety. If king in danger, none, else, ...?
-  all s: square | { -- For all squares, ...
-    s in b.moves iff { -- square is in bishop's legal moves iff ...
-      some s.pc implies not isSameColor[b, s.pc]
-      validMovesForBishop[s, b]
-    }
-  }
-}
-
-pred validMovesForBishop[a: square, b: piece] {  -- should be B, but piece to allow reuse with Queen 
-  -- true for square a if it is on a diagonal square that is not blocked
-    (a in pcprDiags[pc.b] and (no p: piece | {pc.p in pcprDiags[pc.b] and pc.p in ncnrDiags[a]})) or
-    (a in pcnrDiags[pc.b] and (no p: piece | {pc.p in pcnrDiags[pc.b] and pc.p in ncprDiags[a]})) or
-    (a in ncprDiags[pc.b] and (no p: piece | {pc.p in ncprDiags[pc.b] and pc.p in pcnrDiags[a]})) or
-    (a in ncnrDiags[pc.b] and (no p: piece | {pc.p in ncnrDiags[pc.b] and pc.p in pcprDiags[a]}))
-}
-
--- Knight related preds ------------------------------
-pred NMoves[n: N] {
-  all s: square | {
-    s in n.moves iff {
-      some s.pc implies not isSameColor[n, s.pc]
-      validMovesForKnight[s, n]
-    }
-  }
-}
-
-pred validMovesForKnight[a: square, n: N] {
-  { pc.n.coord.col = a.coord.col.r_next and pc.n.coord[row] = (a.coord[row]).c_next.c_next } or 
-  { pc.n.coord.col = a.coord.col.r_next and pc.n.coord[row] = (a.coord[row]).c_prev.c_prev } or 
-  { pc.n.coord.col = a.coord.col.r_prev and pc.n.coord[row] = (a.coord[row]).c_next.c_next } or 
-  { pc.n.coord.col = a.coord.col.r_prev and pc.n.coord[row] = (a.coord[row]).c_prev.c_prev } or 
-  { pc.n.coord[row] = (a.coord[row]).c_next and pc.n.coord.col = a.coord.col.r_next.r_next } or 
-  { pc.n.coord[row] = (a.coord[row]).c_next and pc.n.coord.col = a.coord.col.r_prev.r_prev } or 
-  { pc.n.coord[row] = (a.coord[row]).c_prev and pc.n.coord.col = a.coord.col.r_next.r_next } or 
-  { pc.n.coord[row] = (a.coord[row]).c_prev and pc.n.coord.col = a.coord.col.r_prev.r_prev }
-}
-
 -- Rook related preds --------------------------
 pred RMoves[r: R] {
   all s: square | {
@@ -449,16 +326,6 @@ pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own s
   }
 }
 
--- Queen related preds -------------------------
-
-pred QMoves[q: Q] {
-  all s: square | {
-    s in q.moves iff {
-      some s.pc implies not isSameColor[q, s.pc]
-      validMovesForRook[s, q] or validMovesForBishop[s, q]
-    }
-  }
-}
 
 --- General move-related preds --------------
 
@@ -533,18 +400,9 @@ pred gameOver {
 
 -- ensures all pieces maintain valid moves 
 pred allMoves {
-  all b: B | { BMoves[b] }
-  all n: N | { NMoves[n] }
   all r: R | { RMoves[r] }
-  all q: Q | { QMoves[q] }
   all k: K | { KMoves[k] }
 }
-
-// pred validBoard { -- position legality 
-//   // validKings
-//   piecesToSquares
-//   colorMembership
-// }
 
 pred whiteMove {
   one p: piece | { generalMove[p] and p in White.pieces } 
@@ -565,7 +423,7 @@ pred checkAndNotMove {
 
 -- init state
 pred init {
-  not checkmate
+  // not checkmate
   whiteMove
   all p: piece | {
     some p.sq
@@ -588,34 +446,8 @@ pred traces {
     allMoves
     checkAndNotMove
   }
-  turns
-  // turns
-  // after turns
-  // after blackMove
-  // after after whiteMove
-  // after turns
-  // after after turns
-  // turns until gameOver
-  // eventually checkmate
-  // checkmate implies gameOver
-  // turns// until checkmate
+  after checkmate 
 }
-
-// -- generates a chess puzzle 
-// pred generatePuzzle {
-//   // traces until checkmate
-//   checkmate implies gameOver
-//   always {
-//     structural
-//     allMoves }
-//   // always { validBoard }
-//   // always { allMoves }
-//   // B.sq.coord = row2->colB
-//   // N.sq.coord = row3->colB
-//   // R.sq.coord = row4->colB
-//   // Q.sq.coord = row4->colA
-//   // K.sq.coord = row2->colC
-// }
 
 pred validKingMoves {
   all k : K | {
@@ -632,4 +464,4 @@ pred scenario {
 }
 
 -- generates a standard board 
-run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K
+run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K
