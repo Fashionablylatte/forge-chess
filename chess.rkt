@@ -549,4 +549,10 @@ pred scenario {
 
 -- generates a standard board 
 // run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 N, exactly 2 K -- unsat because 1 N checkmate impossible.
-run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 Q, exactly 2 K
+// run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 N, exactly 2 K -- sat because 2 N checkmate poss.
+// run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 B, exactly 2 K -- unsat because 1 B checkmate impossible.
+// run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 B, exactly 2 K -- unsat because 2 B checkmate poss.
+// run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 1 B, exactly 1 N, exactly 2 K
+// run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 R, exactly 2 K -- sat 
+run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K -- sat
+// run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 Q, exactly 2 K -- sat
