@@ -2,10 +2,10 @@
 
 option problem_type temporal 
 option max_tracelength 10 -- NEEDED! default is 5. need to be able to find the whole lasso.
-option solver MiniSatProver
-option logtranslation 1
-option coregranularity 1
-option core_minimization rce
+// option solver MiniSatProver
+// option logtranslation 1
+// option coregranularity 1
+// option core_minimization rce
 
 /*
  * Logic for Systems Final Project - Chess Model
@@ -304,6 +304,14 @@ pred twoChecks[k : K] {
   after inCheck[k]
 }
 
+pred adjacentKings {
+  some k1 : K | {
+    some k2 : K - k1 {
+      adjacentTo[pc.k1, pc.k2]
+    }
+  }
+}
+
 pred KMoves[k : K] {
   some pc.k
   all s : square | {
@@ -317,7 +325,6 @@ pred KMoves[k : K] {
       no k2 : K - k | {
         adjacentTo[pc.k2, s]
       }
-      // s not in (Color - (pieces.k)).pieces.(moves')
     }
   }
 }
@@ -335,10 +342,10 @@ pred BMoves[b: B] {
 
 pred validMovesForBishop[a: square, b: piece] {  -- should be B, but piece to allow reuse with Queen 
   -- true for square a if it is on a diagonal square that is not blocked
-    (a in pcprDiags[pc.b] and (no p: piece | {pc.p in pcprDiags[pc.b] and pc.p in ncnrDiags[a]})) or
-    (a in pcnrDiags[pc.b] and (no p: piece | {pc.p in pcnrDiags[pc.b] and pc.p in ncprDiags[a]})) or
-    (a in ncprDiags[pc.b] and (no p: piece | {pc.p in ncprDiags[pc.b] and pc.p in pcnrDiags[a]})) or
-    (a in ncnrDiags[pc.b] and (no p: piece | {pc.p in ncnrDiags[pc.b] and pc.p in pcprDiags[a]}))
+    (a in pcprDiags[pc.b] and (no p: piece | {some pc.p and pc.p in pcprDiags[pc.b] and pc.p in ncnrDiags[a]})) or
+    (a in pcnrDiags[pc.b] and (no p: piece | {some pc.p and pc.p in pcnrDiags[pc.b] and pc.p in ncprDiags[a]})) or
+    (a in ncprDiags[pc.b] and (no p: piece | {some pc.p and pc.p in ncprDiags[pc.b] and pc.p in pcnrDiags[a]})) or
+    (a in ncnrDiags[pc.b] and (no p: piece | {some pc.p and pc.p in ncnrDiags[pc.b] and pc.p in pcprDiags[a]}))
 }
 
 -- Knight related preds ------------------------------
@@ -435,6 +442,7 @@ pred QMoves[q: Q] {
 }
 
 --- General move-related preds --------------
+
 pred generalMove[p : piece] {
   some s : square | {
     s in p.moves
@@ -512,7 +520,7 @@ pred turns {
 pred init {
   // not checkmate
   whiteMove
-  always turns
+  not adjacentKings
   colorMembership
   all p: piece | {
     some p.sq
@@ -526,8 +534,14 @@ pred traces {
     colorMembership
     structural
     allMoves
+    turns
   }
-  // eventually checkmate
+}
+
+pred static {
+  colorMembership
+  structural
+  allMoves
 }
 
 -- generates a chess puzzle 
@@ -536,302 +550,306 @@ pred generatePuzzle {
   always {
     structural
     allMoves 
-    }
+  }
 }
 
 pred scenario {
-  // #(Black.pieces & R) = 1
-  // #(White.pieces & R) = 1
+
   // #(Black.pieces & K) = 1
   // #(White.pieces & K) = 1
-  #(Black.pieces & R) = 1
-  #(White.pieces & R) = 1
-  #(White.pieces & K) = 1
-  // all r : R | {
-  //   pc.r.coord.col = row1
-  // }
+
+  // #(Black.pieces & Q) = 1
+  // #(White.pieces & Q) = 1
+  // #(Black.pieces & R) = 1
+  // #(White.pieces & R) = 1
+  // #(Black.pieces & B) = 1
+  // #(White.pieces & B) = 1
+  // #(Black.pieces & N) = 1
+  // #(White.pieces & N) = 1
+  #(Black.pieces & P) = 1
+  #(White.pieces & P) = 1
+  all p : (Black.pieces & P) | {
+    pc.p.coord[row] = colC
+    pc.p.coord.col = row3
+  }
+
+  all p : (White.pieces & P) | {
+    pc.p.coord[row] = colB
+    pc.p.coord.col = row2
+  }
 }
+
+// run {static and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 2 piece, exactly 2 P
 
 -- generates a 5x5 board 
 // run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 2 piece, exactly 1 R, exactly 1 P
-run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 2 R, exactly 1 K
+// run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 5 piece, exactly 2 R, exactly 1 N, exactly 2 K
 
-// inst kingCorner {
-//   -- rows and cols
-//   colA = colA0
-//   colB = colB0
-//   colC = colC0
-//   colD = colD0
-//   colE = colE0
-//   colF = colF0
-//   colG = colG0
-//   colH = colH0
+------------------ TESTING + VERIFICATION --------------------
 
-//   row1 = row10
-//   row2 = row20
-//   row3 = row30
-//   row4 = row40
-//   row5 = row50
-//   row6 = row60
-//   row7 = row70
-//   row8 = row80
+--- SUPER BASIC TESTS --- 
+test expect {
+  -- vacuity check (some traces for an 5x5 board)
+  // vacuityTest :  { traces } for exactly 5 col, exactly 5 row is sat 
 
-//   row = row10 + row20 + row30 + row40 + row50 + row60 + row70 + row80
-//   col = colA0 + colB0 + colC0 + colD0 + colE0 + colF0 + colG0 + colH0
+  -- tests that maintain color + teams size across turns  (COME BACK)
+  /* myColorTest : { always {
+      -- the white + black pieces stay the same OR decrease by one 
+      one p : White.pieces | (White.pieces = White.pieces') or (White.pieces - p = White.pieces')
+      one p : Black.pieces | (Black.pieces = Black.pieces') or (Black.pieces - p = Black.pieces')
+      
+      -- if a team loses a piece, the other team doesn't lose pieces
+      #(Black.pieces') < #(Black.pieces) implies { White.pieces = White.pieces' }
+      #(White.pieces') < #(White.pieces) implies  { Black.pieces = Black.pieces' }
+    } 
+  } for exactly 5 col, exactly 5 row is theorem -- FAILS ! **/ 
+}
 
-//   c_prev = colB0->colA0 + colC0->colB0 + colD0->colC0 + colE0->colD0 + colF0->colE0 + colG0->colF0 + colH0->colG0
-//   c_next = colA0->colB0 + colB0->colC0 + colC0->colD0 + colD0->colE0 + colE0->colF0 + colF0->colG0 + colG0->colH0
-//   r_prev = row20->row10 + row30->row20 + row40->row30 + row50->row40 + row60->row50 + row70->row60 + row80->row70
-//   r_next = row10->row20 + row20->row30 + row30->row40 + row40->row50 + row50->row60 + row60->row70 + row70->row80
+-- INSTANCES !! 
+-- one empty or with one king?? -- unsat 
+-- if no checkmate -- unsat (for generatePuzzle)
 
-//   -- squares 
-//   square = square0 + square1 + square2 + square3 + square4 + square5 + 
-//     square6 + square7 + square8 + square9 + square10 + square11 + 
-//     square12 + square13 + square14 + square15 + square16 + square17 + 
-//     square18 + square19 + square20 + square21 + square22 + square23 + 
-//     square24 + square25 + square26 + square27 + square28 + square29 + 
-//     square30 + square31 + square32 + square33 + square34 + square35 + 
-//     square36 + square37 + square38 + square39 + square40 + square41 + 
-//     square42 + square43 + square44 + square45 + square46 + square47 + 
-//     square48 + square49 + square50 + square51 + square52 + square53 + 
-//     square54 + square55 + square56 + square57 + square58 + square59 + 
-//     square60 + square61 + square62 + square63
+------------------ FORMAL STRUCTURAL TESTS --------------------
+-- basic instance: an empty board 
+inst emptyBoard {
+  -- rows and cols
+  colA = colA0
+  colB = colB0
+  colC = colC0
+  colD = colD0
+  colE = colE0
+
+  row1 = row10
+  row2 = row20
+  row3 = row30
+  row4 = row40
+  row5 = row50
+
+  row = row10 + row20 + row30 + row40 + row50
+  col = colA0 + colB0 + colC0 + colD0 + colE0
+
+  c_prev = colB0->colA0 + colC0->colB0 + colD0->colC0 + colE0->colD0
+  c_next = colA0->colB0 + colB0->colC0 + colC0->colD0 + colD0->colE0
+  r_prev = row20->row10 + row30->row20 + row40->row30 + row50->row40
+  r_next = row10->row20 + row20->row30 + row30->row40 + row40->row50
+
+  -- squares 
+  square = square0 + square1 + square2 + square3 + square4 + square5 + 
+    square6 + square7 + square8 + square9 + square10 + square11 + 
+    square12 + square13 + square14 + square15 + square16 + square17 + 
+    square18 + square19 + square20 + square21 + square22 + square23 + 
+    square24
   
-//   coord = square0->row1->colA + square1->row1->colB + square2->row1->colC + square3->row1->colD + 
-//     square4->row1->colE + square5->row1->colF + square6->row1->colG + square7->row1->colH + 
-//     square8->row2->colA + square9->row2->colB + square10->row2->colC + square11->row2->colD + 
-//     square12->row2->colE + square13->row2->colF + square14->row2->colG + square15->row2->colH + 
-//     square16->row3->colA + square17->row3->colB + square18->row3->colC + square19->row3->colD + 
-//     square20->row3->colE + square21->row3->colF + square22->row3->colG + square23->row3->colH + 
-//     square24->row4->colA + square25->row4->colB + square26->row4->colC + square27->row4->colD + 
-//     square28->row4->colE + square29->row4->colF + square30->row4->colG + square31->row4->colH + 
-//     square32->row5->colA + square33->row5->colB + square34->row5->colC + square35->row5->colD + 
-//     square36->row5->colE + square37->row5->colF + square38->row5->colG + square39->row5->colH + 
-//     square40->row6->colA + square41->row6->colB + square42->row6->colC + square43->row6->colD + 
-//     square44->row6->colE + square45->row6->colF + square46->row6->colG + square47->row6->colH + 
-//     square48->row7->colA + square49->row7->colB + square50->row7->colC + square51->row7->colD + 
-//     square52->row7->colE + square53->row7->colF + square54->row7->colG + square55->row7->colH + 
-//     square56->row8->colA + square57->row8->colB + square58->row8->colC + square59->row8->colD + 
-//     square60->row8->colE + square61->row8->colF + square62->row8->colG + square63->row8->colH
+  coord = square0->row1->colA + square1->row1->colB + square2->row1->colC + square3->row1->colD + 
+    square4->row1->colE + square5->row2->colA + square6->row2->colB + square7->row2->colC + 
+    square8->row2->colD + square9->row2->colE + square10->row3->colA + square11->row3->colB + 
+    square12->row3->colC + square13->row3->colD + square14->row3->colE + square15->row4->colA + 
+    square16->row4->colB + square17->row4->colC + square18->row4->colD + square19->row4->colE + 
+    square20->row5->colA + square21->row5->colB + square22->row5->colC + square23->row5->colD + 
+    square24->row5->colE
 
-//   -- chess pieces
-//   P = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15
-//   N = N0 + N1 + N2 + N3
-//   B = B0 + B1 + B2 + B3
-//   R = R0 + R1 + R2 + R3
-//   Q = Q0 + Q1
-//   K = K0 + K1
+  -- chess pieces
+  P = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9
+  N = N0 + N1 + N2 + N3
+  B = B0 + B1 + B2 + B3
+  R = R0 + R1 + R2 + R3
+  Q = Q0 + Q1
+  K = K0 + K1
 
-//   piece = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + 
-//     N0 + N1 + N2 + N3 + B0 + B1 + B2 + B3 + R0 + R1 + R2 + R3 + Q0 + Q1 + K0 + K1
+  piece = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + N0 + N1 + N2 + N3 + 
+    B0 + B1 + B2 + B3 + R0 + R1 + R2 + R3 + Q0 + Q1 + K0 + K1
 
-//   -- color 
-//   Black = Black0 
-//   White = White0
-//   Color = Black0 + White0
+  -- color 
+  Black = Black0 
+  White = White0
+  Color = Black0 + White0
   
-//   pieces = Black0->P0 + Black0->P1 + Black0->P2 + Black0->P3 + Black0->P4 + Black0->P5 + 
-//     Black0->P6 + Black0->P7 + White0->P8 + White0->P9 + White0->P10 + White0->P11 + 
-//     White0->P12 + White0->P13 + White0->P14 + White0->P15 + Black0->N0 + Black0->N1 + 
-//     White0->N2 + White0->N3 + Black0->B0 + Black0->B1 + White0->B2 + White0->B3 + 
-//     Black0->R0 + Black0->R1 + White0->R2 + White0->R3 + Black0->Q0 + White0->Q1 + 
-//     Black0->K0 + White0->K1
+  pieces = Black0->P0 + Black0->P1 + Black0->P2 + Black0->P3 + Black0->P4 + White0->P5 + 
+    White0->P6 + White0->P7 + White0->P8 + White0->P9 + Black0->N0 + Black0->N1 + 
+    White0->N2 + White0->N3 + Black0->B0 + Black0->B1 + White0->B2 + White0->B3 + 
+    Black0->R0 + Black0->R1 + White0->R2 + White0->R3 + Black0->Q0 + White0->Q1 + 
+    Black0->K0 + White0->K1
+}
 
-//   pc = square0 -> K1
-//   sq = K1 -> square0
-//   moves = K1 -> square8 + K1 -> square9 + K1 -> square1
-// }
+-- board with 2+ squares mapping to same coordinates 
+inst doubleMapBoard {
+    -- rows and cols
+  colA = colA0
+  colB = colB0
+  colC = colC0
+  colD = colD0
+  colE = colE0
 
-// inst twoSquaresWithSameCoords {
-//   -- rows and cols
-//   colA = colA0
-//   colB = colB0
-//   colC = colC0
-//   colD = colD0
-//   colE = colE0
-//   colF = colF0
-//   colG = colG0
-//   colH = colH0
+  row1 = row10
+  row2 = row20
+  row3 = row30
+  row4 = row40
+  row5 = row50
 
-//   row1 = row10
-//   row2 = row20
-//   row3 = row30
-//   row4 = row40
-//   row5 = row50
-//   row6 = row60
-//   row7 = row70
-//   row8 = row80
+  row = row10 + row20 + row30 + row40 + row50
+  col = colA0 + colB0 + colC0 + colD0 + colE0
 
-//   row = row10 + row20 + row30 + row40 + row50 + row60 + row70 + row80
-//   col = colA0 + colB0 + colC0 + colD0 + colE0 + colF0 + colG0 + colH0
+  c_prev = colB0->colA0 + colC0->colB0 + colD0->colC0 + colE0->colD0
+  c_next = colA0->colB0 + colB0->colC0 + colC0->colD0 + colD0->colE0
+  r_prev = row20->row10 + row30->row20 + row40->row30 + row50->row40
+  r_next = row10->row20 + row20->row30 + row30->row40 + row40->row50
 
-//   c_prev = colB0->colA0 + colC0->colB0 + colD0->colC0 + colE0->colD0 + colF0->colE0 + colG0->colF0 + colH0->colG0
-//   c_next = colA0->colB0 + colB0->colC0 + colC0->colD0 + colD0->colE0 + colE0->colF0 + colF0->colG0 + colG0->colH0
-//   r_prev = row20->row10 + row30->row20 + row40->row30 + row50->row40 + row60->row50 + row70->row60 + row80->row70
-//   r_next = row10->row20 + row20->row30 + row30->row40 + row40->row50 + row50->row60 + row60->row70 + row70->row80
-
-//   -- squares 
-//   square = square0 + square1 + square2 + square3 + square4 + square5 + 
-//     square6 + square7 + square8 + square9 + square10 + square11 + 
-//     square12 + square13 + square14 + square15 + square16 + square17 + 
-//     square18 + square19 + square20 + square21 + square22 + square23 + 
-//     square24 + square25 + square26 + square27 + square28 + square29 + 
-//     square30 + square31 + square32 + square33 + square34 + square35 + 
-//     square36 + square37 + square38 + square39 + square40 + square41 + 
-//     square42 + square43 + square44 + square45 + square46 + square47 + 
-//     square48 + square49 + square50 + square51 + square52 + square53 + 
-//     square54 + square55 + square56 + square57 + square58 + square59 + 
-//     square60 + square61 + square62 + square63
+  -- squares 
+  square = square0 + square1 + square2 + square3 + square4 + square5 + 
+    square6 + square7 + square8 + square9 + square10 + square11 + 
+    square12 + square13 + square14 + square15 + square16 + square17 + 
+    square18 + square19 + square20 + square21 + square22 + square23 + 
+    square24
   
-//   coord = square0->row1->colA + square1->row1->colA + square2->row1->colC + square3->row1->colD + 
-//     square4->row1->colE + square5->row1->colF + square6->row1->colG + square7->row1->colH + 
-//     square8->row2->colA + square9->row2->colB + square10->row2->colC + square11->row2->colD + 
-//     square12->row2->colE + square13->row2->colF + square14->row2->colG + square15->row2->colH + 
-//     square16->row3->colA + square17->row3->colB + square18->row3->colC + square19->row3->colD + 
-//     square20->row3->colE + square21->row3->colF + square22->row3->colG + square23->row3->colH + 
-//     square24->row4->colA + square25->row4->colB + square26->row4->colC + square27->row4->colD + 
-//     square28->row4->colE + square29->row4->colF + square30->row4->colG + square31->row4->colH + 
-//     square32->row5->colA + square33->row5->colB + square34->row5->colC + square35->row5->colD + 
-//     square36->row5->colE + square37->row5->colF + square38->row5->colG + square39->row5->colH + 
-//     square40->row6->colA + square41->row6->colB + square42->row6->colC + square43->row6->colD + 
-//     square44->row6->colE + square45->row6->colF + square46->row6->colG + square47->row6->colH + 
-//     square48->row7->colA + square49->row7->colB + square50->row7->colC + square51->row7->colD + 
-//     square52->row7->colE + square53->row7->colF + square54->row7->colG + square55->row7->colH + 
-//     square56->row8->colA + square57->row8->colB + square58->row8->colC + square59->row8->colD + 
-//     square60->row8->colE + square61->row8->colF + square62->row8->colG + square63->row8->colH
+  -- two squares map to 2D
+  coord = square0->row1->colA + square1->row1->colB + square2->row1->colC + square3->row1->colD + 
+    square4->row1->colE + square5->row2->colA + square6->row2->colB + square7->row2->colC + 
+    square8->row2->colD + square9->row2->colD + square10->row3->colA + square11->row3->colB + 
+    square12->row3->colC + square13->row3->colD + square14->row3->colE + square15->row4->colA + 
+    square16->row4->colB + square17->row4->colC + square18->row4->colD + square19->row4->colE + 
+    square20->row5->colA + square21->row5->colB + square22->row5->colC + square23->row5->colD + 
+    square24->row5->colE
 
-//   -- chess pieces
-//   P = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15
-//   N = N0 + N1 + N2 + N3
-//   B = B0 + B1 + B2 + B3
-//   R = R0 + R1 + R2 + R3
-//   Q = Q0 + Q1
-//   K = K0 + K1
+  -- chess pieces
+  P = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9
+  N = N0 + N1 + N2 + N3
+  B = B0 + B1 + B2 + B3
+  R = R0 + R1 + R2 + R3
+  Q = Q0 + Q1
+  K = K0 + K1
 
-//   piece = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + 
-//     N0 + N1 + N2 + N3 + B0 + B1 + B2 + B3 + R0 + R1 + R2 + R3 + Q0 + Q1 + K0 + K1
+  piece = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + N0 + N1 + N2 + N3 + 
+    B0 + B1 + B2 + B3 + R0 + R1 + R2 + R3 + Q0 + Q1 + K0 + K1
 
-//   -- color 
-//   Black = Black0 
-//   White = White0
-//   Color = Black0 + White0
+  -- color 
+  Black = Black0 
+  White = White0
+  Color = Black0 + White0
   
-//   pieces = Black0->P0 + Black0->P1 + Black0->P2 + Black0->P3 + Black0->P4 + Black0->P5 + 
-//     Black0->P6 + Black0->P7 + White0->P8 + White0->P9 + White0->P10 + White0->P11 + 
-//     White0->P12 + White0->P13 + White0->P14 + White0->P15 + Black0->N0 + Black0->N1 + 
-//     White0->N2 + White0->N3 + Black0->B0 + Black0->B1 + White0->B2 + White0->B3 + 
-//     Black0->R0 + Black0->R1 + White0->R2 + White0->R3 + Black0->Q0 + White0->Q1 + 
-//     Black0->K0 + White0->K1
+  pieces = Black0->P0 + Black0->P1 + Black0->P2 + Black0->P3 + Black0->P4 + White0->P5 + 
+    White0->P6 + White0->P7 + White0->P8 + White0->P9 + Black0->N0 + Black0->N1 + 
+    White0->N2 + White0->N3 + Black0->B0 + Black0->B1 + White0->B2 + White0->B3 + 
+    Black0->R0 + Black0->R1 + White0->R2 + White0->R3 + Black0->Q0 + White0->Q1 + 
+    Black0->K0 + White0->K1
+}
 
-//   no pc 
-//   no sq 
-//   no moves
-// }
+-- tests for structual soundness 
+/* test expect {
+  -- an empty board that is correctly constructed is structually sound 
+  emptyBoardIsStructuralTest : {
+    structural
+  } for emptyBoard is sat
 
-// inst emptyBoard {
-//   -- rows and cols
-//   colA = colA0
-//   colB = colB0
-//   colC = colC0
-//   colD = colD0
-//   colE = colE0
-//   colF = colF0
-//   colG = colG0
-//   colH = colH0
+  -- structural catches when squares don't have unique coordinates 
+  doubleMapBoardIsNotStructuralTest : {
+    structural
+  } for doubleMapBoard is unsat
+} **/
 
-//   row1 = row10
-//   row2 = row20
-//   row3 = row30
-//   row4 = row40
-//   row5 = row50
-//   row6 = row60
-//   row7 = row70
-//   row8 = row80
+------------------ FORMAL STATE TESTS --------------------
 
-//   row = row10 + row20 + row30 + row40 + row50 + row60 + row70 + row80
-//   col = colA0 + colB0 + colC0 + colD0 + colE0 + colF0 + colG0 + colH0
+-- state with just one piece 
+inst rookieMove {
+  emptyBoard -- board setup 
+  pc = square0->R0
+  sq = R0->square0
+  moves = R0->square1 + R0->square2 + R0->square3 + R0->square4 + R0->square5 + R0->square10 + R0->square15 + R0->square20
+}
 
-//   c_prev = colB0->colA0 + colC0->colB0 + colD0->colC0 + colE0->colD0 + colF0->colE0 + colG0->colF0 + colH0->colG0
-//   c_next = colA0->colB0 + colB0->colC0 + colC0->colD0 + colD0->colE0 + colE0->colF0 + colF0->colG0 + colG0->colH0
-//   r_prev = row20->row10 + row30->row20 + row40->row30 + row50->row40 + row60->row50 + row70->row60 + row80->row70
-//   r_next = row10->row20 + row20->row30 + row30->row40 + row40->row50 + row50->row60 + row60->row70 + row70->row80
+-- state that doesn't keep track of moves (should be unsat)
+inst noMovesState {
+  emptyBoard -- board setup 
+  pc = square1->B1
+  sq = B1->square1 
+  no moves 
+}
 
-//   -- squares 
-//   square = square0 + square1 + square2 + square3 + square4 + square5 + 
-//     square6 + square7 + square8 + square9 + square10 + square11 + 
-//     square12 + square13 + square14 + square15 + square16 + square17 + 
-//     square18 + square19 + square20 + square21 + square22 + square23 + 
-//     square24 + square25 + square26 + square27 + square28 + square29 + 
-//     square30 + square31 + square32 + square33 + square34 + square35 + 
-//     square36 + square37 + square38 + square39 + square40 + square41 + 
-//     square42 + square43 + square44 + square45 + square46 + square47 + 
-//     square48 + square49 + square50 + square51 + square52 + square53 + 
-//     square54 + square55 + square56 + square57 + square58 + square59 + 
-//     square60 + square61 + square62 + square63
+-- state with correct moves for 2+ pieces/interactions 
+inst interactingPiecesState {
+  emptyBoard -- board setup 
+  pc = square0->K0 + square24->K1 + square1->R0
+  sq = K0->square0 + K1->square24 + B0->square1
+  moves = K0->square6 + K0->square5 + K1->square19 + K1->square23 + K1->square18 + 
+    R0->square6 + R0->square11 + R0->square16 + R0->square21 + R0->square2 + R0->square3 + R0->square4
+}
+
+-- knight moves
+inst knight {
+  emptyBoard
+  pc = square0 -> N0 + square12 -> N1
+  sq = N0 -> square0 + N1 -> square12
+  moves = N0 -> square11 + N0 -> square7 + N1 -> square21 + N1 -> square23 + N1 -> square19 + N1 -> square9 + N1 -> square3 + N1 -> square1 + N1 -> square5 + N1 -> square15
+}
+
+-- king moves
+inst king {
+  emptyBoard
+  pc = square0 -> K1 + square12 -> K0
+  sq = K1 -> square0 + K0 -> square12 
+  moves = K1 -> square1 + K1 -> square5 + K1 -> square6 + K0 -> square16 + K0 -> square17 + K0 -> square18 + K0 -> square13 + K0 -> square8 + K0 -> square7 + K0 -> square11
+}
+-- bishop moves
+inst bishop {
+  emptyBoard
+  pc = square12->B0 + square6->B1
+  sq = B0->square12 + B1->square6
+  moves = B0->square20 + B0->square16 + B0->square24 + B0->square18 + B0->square4 + B0->square8 + B1->square10 + B1->square2 + B1->square0
+}
+
+inst pawn {
+  emptyBoard
+  pc = square12->P1 + square6->P5
+  sq = P1->square12 + P5->square6
+  moves = P5->square16 + P5->square11 + P5->square12 + P1->square6 + P1->square7
+}
+
+-- WHY DID I ONLY GET STATES WITH NO MOVES 
+-- run { structural and allMoves and positionality } for exactly 8 row, exactly 8 col, exactly 3 piece, exactly 1 B, exactly 2 K 
+
+-- run { structural and allMoves } for exactly 8 row, exactly 8 col, exactly 3 piece, exactly 1 B, exactly 2 K 
+
+-- TODO: INSERT state w/ kings here 
+
+-- tests for state move soundness 
+test expect {
+  /* -- an empty board that is correctly constructed is structually sound -- */
+  // rookieMoveOkTest : {
+  //   allMoves
+  // } for rookieMove is sat
   
-//   coord = square0->row1->colA + square1->row1->colB + square2->row1->colC + square3->row1->colD + 
-//     square4->row1->colE + square5->row1->colF + square6->row1->colG + square7->row1->colH + 
-//     square8->row2->colA + square9->row2->colB + square10->row2->colC + square11->row2->colD + 
-//     square12->row2->colE + square13->row2->colF + square14->row2->colG + square15->row2->colH + 
-//     square16->row3->colA + square17->row3->colB + square18->row3->colC + square19->row3->colD + 
-//     square20->row3->colE + square21->row3->colF + square22->row3->colG + square23->row3->colH + 
-//     square24->row4->colA + square25->row4->colB + square26->row4->colC + square27->row4->colD + 
-//     square28->row4->colE + square29->row4->colF + square30->row4->colG + square31->row4->colH + 
-//     square32->row5->colA + square33->row5->colB + square34->row5->colC + square35->row5->colD + 
-//     square36->row5->colE + square37->row5->colF + square38->row5->colG + square39->row5->colH + 
-//     square40->row6->colA + square41->row6->colB + square42->row6->colC + square43->row6->colD + 
-//     square44->row6->colE + square45->row6->colF + square46->row6->colG + square47->row6->colH + 
-//     square48->row7->colA + square49->row7->colB + square50->row7->colC + square51->row7->colD + 
-//     square52->row7->colE + square53->row7->colF + square54->row7->colG + square55->row7->colH + 
-//     square56->row8->colA + square57->row8->colB + square58->row8->colC + square59->row8->colD + 
-//     square60->row8->colE + square61->row8->colF + square62->row8->colG + square63->row8->colH
+  // /* -- a state with pieces and without moves doesn't work -- */
+  // noMovesTest : {
+  //   allMoves
+  // } for noMovesState is unsat
 
-//   -- chess pieces
-//   P = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15
-//   N = N0 + N1 + N2 + N3
-//   B = B0 + B1 + B2 + B3
-//   R = R0 + R1 + R2 + R3
-//   Q = Q0 + Q1
-//   K = K0 + K1
+  // // /* -- makes sure that moves with many pieces (mimicking a real board) are valid -- */
+  // interactingPiecesTest : {
+  //   allMoves
+  // } for interactingPiecesState is sat // CHECK!!!! **/ -- WHY DID I ONLY GET STATES WITH NO MOVES  
 
-//   piece = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + 
-//     N0 + N1 + N2 + N3 + B0 + B1 + B2 + B3 + R0 + R1 + R2 + R3 + Q0 + Q1 + K0 + K1
+  // knightTest : {
+  //   allMoves
+  // } for knight is sat
 
-//   -- color 
-//   Black = Black0 
-//   White = White0
-//   Color = Black0 + White0
-  
-//   pieces = Black0->P0 + Black0->P1 + Black0->P2 + Black0->P3 + Black0->P4 + Black0->P5 + 
-//     Black0->P6 + Black0->P7 + White0->P8 + White0->P9 + White0->P10 + White0->P11 + 
-//     White0->P12 + White0->P13 + White0->P14 + White0->P15 + Black0->N0 + Black0->N1 + 
-//     White0->N2 + White0->N3 + Black0->B0 + Black0->B1 + White0->B2 + White0->B3 + 
-//     Black0->R0 + Black0->R1 + White0->R2 + White0->R3 + Black0->Q0 + White0->Q1 + 
-//     Black0->K0 + White0->K1
+  // kingTest : {
+  //   allMoves
+  // } for king is sat
 
-//   no pc 
-//   no sq 
-//   no moves
-// }
+  // bishopTest : {
+  //   allMoves
+  // } for bishop is sat
 
-// test expect {
-//   sanityCheck : {
-//     structural
-//   } for emptyBoard is sat
+  // pawnTest : {
+  //   allMoves
+  // } for pawn is sat
 
-//   notFunctional : {
-//     functionalBoard
-//   } for twoSquaresWithSameCoords is unsat
 
-//   functional : {
-//     functionalBoard
-//   } for emptyBoard is sat
-// }
+  // check checkmate, stalemate, etc. 
+} 
 
-// run kingCorner
+------------------ FORMAL TRANSITION TESTS (2+ STATES) --------------------
 
-// test expect {
-//   restrictedKing : {
-//     allMoves
-//   } for kingCorner is sat
-// }
+inst transitionPossible {
+  emptyBoard -- board setup 
+  -- .. edit 
+}
