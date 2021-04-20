@@ -7,7 +7,8 @@ option max_tracelength 10 -- NEEDED! default is 5. need to be able to find the w
  * Logic for Systems Final Project - Chess Model
 **/
 
--- We define our board with rows and columns that have previous and next neighbors.
+-- We define our board with rows and columns that have previous and next neighbors. There is no actual Board sig, as 
+-- we eliminated to improve performance.
 abstract sig row {r_prev: lone row, r_next: lone row}
 abstract sig col {c_prev: lone col, c_next: lone col}
 
@@ -15,7 +16,7 @@ one sig colA extends col {}
 one sig colB extends col {}
 one sig colC extends col {}
 one sig colD extends col {}
-one sig colE extends col {} -- disabled for performance reasons
+one sig colE extends col {} -- disabled for performance reasons. Reenable to get full 8x8.
 // one sig colF extends col {}
 // one sig colG extends col {}
 // one sig colH extends col {}
@@ -31,17 +32,17 @@ one sig row5 extends row {}
 
 -- We have squares that can optionally match to a piece occupying it.
 sig square {
-  var pc: lone piece,
-  coord: set row -> col
+  var pc: lone piece,-- square's piece (if any - mutable)
+  coord: set row -> col -- square's coordinate (immutable)
 }
 
 -- A piece optionally matches to a square that it occupies, plus any squares it can move to. 
 abstract sig piece {
-  var sq: lone square,
-  var moves: set square -- TODO how to make this single?
+  var sq: lone square, -- a piece's square, if it is not captured
+  var moves: set square -- all the piece's potentially valid moves (does not account for state restrictions, e.g. king safety)
 }
 
--- These represent our chess pieces, with the letter corresponding to the piece name in algebraic notation (excepting pawns). 
+-- These represent our chess pieces, with the letter corresponding to the piece name in chess algebraic notation (excepting pawns). 
 sig P extends piece {} -- pawn
 sig N extends piece {} -- knight
 sig B extends piece {} -- bishop
@@ -57,8 +58,10 @@ abstract sig Color {
 one sig Black extends Color {}
 one sig White extends Color {}
 
--- preds for color membership
-pred colorMembership { -- TODO UNSAT
+-- ======================= COLOR HELPERS =======================
+
+-- enforces color membership - no crossover between teams and all pieces in a team.
+pred colorMembership {
   no White.pieces & Black.pieces
   all p : piece | {
     p in (Color.pieces)
@@ -71,7 +74,9 @@ pred isSameColor[p1: piece, p2: piece] {
   (p1 in White.pieces and p2 in White.pieces)
 }
 
--- Helpers for finding square relations
+-- ======================= SQUARE RELATION HELPERS =======================
+
+-- find adjacent rows or cols
 fun prevRow[sq: square]: lone row {
   sq.coord.col.r_prev
 }
@@ -88,7 +93,8 @@ fun nextCol[sq: square]: lone col {
   (sq.coord[row]).c_next
 }
 
--- Experimental
+-- Find adjacent diagonal squares - 
+-- prevcolprevrow = pcpr, nextcolprevrow = ncpr, etc. 
 fun pcprDiag[sq: square]: lone square {
   (coord.((sq.coord[row]).c_prev)).(sq.coord.col.r_prev)
 }
@@ -105,6 +111,8 @@ fun ncnrDiag[sq: square]: lone square {
   (coord.((sq.coord[row]).c_next)).(sq.coord.col.r_next)
 }
 
+
+-- find full extended diagonals. 
 fun pcprDiags[sq: square]: set square {
   pcprDiag[sq] + 
   pcprDiag[pcprDiag[sq]] + 
@@ -145,14 +153,29 @@ fun ncprDiags[sq: square]: set square {
   ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]]]
 }
 
+-- find all diagonally reachable squares.
 fun allDiags[sq: square]: set square {
   pcprDiags[sq] + pcnrDiags[sq] + ncnrDiags[sq] + ncprDiags[sq]
 }
 
--- STRUCTURE + VALIDITY ----------------------
+-- Tells if two squares are adjacent to each other
+pred adjacentTo[s1 : square, s2 : square] {
+  s1.coord.col = s2.coord.col implies {
+    nextCol[s1] = s2.coord[row] or prevCol[s1] = s2.coord[row]
+  }
+  s1.coord[row] = s2.coord[row] implies {
+    nextRow[s1] = s2.coord.col or prevRow[s1] = s2.coord.col
+  }
+  (s1.coord.col != s2.coord.col && s1.coord[row] != s2.coord[row]) implies {
+    nextRow[s1] = s2.coord.col or prevRow[s1] = s2.coord.col
+    nextCol[s1] = s2.coord[row] or prevCol[s1] = s2.coord[row]
+  }
+}
+
+-- ===================== STRUCTURE + VALIDITY ======================
 pred piecesToSquares { -- ensures squares and pieces are one-to-one mapped
   -- bidirectional mapping
-  all p: piece | all s: square { -- TODO verify
+  all p: piece | all s: square {
     s in p.sq iff p in s.pc
   }
 
@@ -162,6 +185,7 @@ pred piecesToSquares { -- ensures squares and pieces are one-to-one mapped
   }
 }
 
+-- helper to ensure the squares and coords are one-to-one and onto
 pred functionalBoard {
   all s1 : square | {
     no s2 : square - s1 | {
@@ -216,7 +240,7 @@ pred structural { -- solely focused on board dimensions
   // row7.r_next = row8
 }
 
--- Pawn related preds --------------------------
+-- ================================= Pawn related preds =================================
 pred forwardDiagonal[p: P, s : square] {
   some s.pc
   p in White.pieces implies {
@@ -260,7 +284,7 @@ pred PMoves[p : P] {
   }
 }
 
--- King related preds --------------------------
+-- ================================= King related preds =================================
 pred validKings { -- should only and always have 2 kings.
   #(K) = 2
   all k: K | {
@@ -271,20 +295,6 @@ pred validKings { -- should only and always have 2 kings.
   }
   one k: K | {
     k in Black.pieces
-  }
-}
-
--- Tells if two squares are adjacent to each other
-pred adjacentTo[s1 : square, s2 : square] {
-  s1.coord.col = s2.coord.col implies {
-    nextCol[s1] = s2.coord[row] or prevCol[s1] = s2.coord[row]
-  }
-  s1.coord[row] = s2.coord[row] implies {
-    nextRow[s1] = s2.coord.col or prevRow[s1] = s2.coord.col
-  }
-  (s1.coord.col != s2.coord.col && s1.coord[row] != s2.coord[row]) implies {
-    nextRow[s1] = s2.coord.col or prevRow[s1] = s2.coord.col
-    nextCol[s1] = s2.coord[row] or prevCol[s1] = s2.coord[row]
   }
 }
 
@@ -331,9 +341,8 @@ pred KMoves[k : K] {
   }
 }
 
--- Bishop related preds --------------------------
-pred BMoves[b: B] {
-  -- need to add legality for king safety. If king in danger, none, else, ...?
+-- ================================= Bishop related preds =================================
+pred BMoves[b: B] { -- enforces valid moves
   all s: square | { -- For all squares, ...
     s in b.moves iff { -- square is in bishop's legal moves iff ...
       some s.pc implies not isSameColor[b, s.pc]
@@ -342,6 +351,7 @@ pred BMoves[b: B] {
   }
 }
 
+-- collects the set of valid moves
 pred validMovesForBishop[a: square, b: piece] {  -- should be B, but piece to allow reuse with Queen 
   -- true for square a if it is on a diagonal square that is not blocked
     (a in pcprDiags[pc.b] and (no p: piece | {some pc.p and pc.p in pcprDiags[pc.b] and pc.p in ncnrDiags[a]})) or
@@ -350,7 +360,7 @@ pred validMovesForBishop[a: square, b: piece] {  -- should be B, but piece to al
     (a in ncnrDiags[pc.b] and (no p: piece | {some pc.p and pc.p in ncnrDiags[pc.b] and pc.p in pcprDiags[a]}))
 }
 
--- Knight related preds ------------------------------
+-- ================================= Knight related preds =================================
 pred NMoves[n: N] {
   all s: square | {
     s in n.moves iff {
@@ -371,7 +381,7 @@ pred validMovesForKnight[a: square, n: N] {
   { pc.n.coord[row] = (a.coord[row]).c_prev and pc.n.coord.col = a.coord.col.r_prev.r_prev }
 }
 
--- Rook related preds --------------------------
+-- ================================= Rook related preds =================================
 pred RMoves[r: R] {
   all s: square | {
     s in r.moves iff {
@@ -381,15 +391,8 @@ pred RMoves[r: R] {
   }
 }
  
-pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own starting square
-  -- assuming that: 
-  -- rook starts on some square, some square has it
-  -- ends on some square, some square' has it
-  -- captures happen if other color piece in r's square' (aka square') doesn't
-  --    have piece of same color
-  -- squares for which this predicate is false won't be in r.moves
-
-  -- exclude its own square TODO double check
+pred validMovesForRook[a: square, r: piece] { 
+  -- exclude its own square
   not pc.r = a
 
   -- the after piece is in the same row or col
@@ -432,9 +435,9 @@ pred validMovesForRook[a: square, r: piece] { -- TODO does not exclude its own s
   }
 }
 
--- Queen related preds -------------------------
+-- ================================= Queen related preds =================================
 
-pred QMoves[q: Q] {
+pred QMoves[q: Q] { -- just rook + bishop
   all s: square | {
     s in q.moves iff {
       some s.pc implies not isSameColor[q, s.pc]
@@ -443,8 +446,9 @@ pred QMoves[q: Q] {
   }
 }
 
---- General move-related preds --------------
+--- ================================= General move-related preds =================================
 
+-- makes any move for any piece.
 pred generalMove[p : piece] {
   some s : square | {
     s in p.moves
@@ -454,7 +458,7 @@ pred generalMove[p : piece] {
       pc' = pc - (pc.p -> p) + (s -> p) 
     }
   }
-  -- TODO verify new addition. Prevents king from being attacked after move.
+  --  Prevents king from being attacked after move.
   after { no k: K | { isSameColor[k, p] and inCheck[k] }}
 }
 
@@ -469,6 +473,7 @@ pred allMoves {
   all k: K | some pc.k implies {KMoves[k]} else {no k.moves}
 }
 
+-- checks if a state is checkmate
 pred checkmate {
   some k : K | {
     -- A state where the king is under attack
@@ -476,18 +481,22 @@ pred checkmate {
       not isSameColor[k, p1] -- piece is not same color
       pc.k in p1.moves -- king under attack
       no p3 : piece | { -- no piece that can move and end the threat
-        isSameColor[k, p3] -- TODO maybe remove this.
+        isSameColor[k, p3] 
         generalMove[p3] 
       }
     }
-    no k.moves
+    no k.moves -- king can't move
   }
 }
 
+-- ================================= State restrictions =================================
+
+-- white's move
 pred whiteMove {
   some p: White.pieces | { generalMove[p] } 
 }
 
+-- black's move
 pred blackMove {
   some p: Black.pieces | { generalMove[p] }
 }
@@ -498,7 +507,7 @@ pred turns {
   blackMove implies { after (whiteMove and not blackMove)}
 }
 
--- init state
+-- init state for move sequences
 pred init {
   not checkmate
   whiteMove
@@ -509,7 +518,7 @@ pred init {
   }
 }
 
--- traces 
+-- traces for move sequences
 pred traces {
   init
   always {
@@ -520,6 +529,8 @@ pred traces {
   }
 }
 
+
+-- checkmate related state stuff
 pred init2 {
   whiteMove
   all p: piece | {
@@ -527,6 +538,7 @@ pred init2 {
   }
 }
 
+-- can't be white's move if black is in check and vice versa
 pred checkAndNotMove {
   whiteMove implies {
     no k: K | { k in Black.pieces and inCheck[k] }
@@ -536,11 +548,12 @@ pred checkAndNotMove {
   }
 }
 
+-- traces, but for checkmate in 1
 pred mate1 {
   init2
   validKings
   always {
-    colorMembership -- TODO move
+    colorMembership
     structural
     allMoves
     checkAndNotMove
@@ -548,63 +561,20 @@ pred mate1 {
   after checkmate 
 }
 
+
 pred static {
   colorMembership
   structural
   allMoves
 }
 
-pred scenario {
-
-  // #(Black.pieces & K) = 1
-  // #(White.pieces & K) = 1
-
-  // #(Black.pieces & Q) = 1
-  // #(White.pieces & Q) = 1
-  // #(Black.pieces & R) = 1
-  // #(White.pieces & R) = 1
-  // #(Black.pieces & B) = 1
-  // #(White.pieces & B) = 1
-  // #(Black.pieces & N) = 1
-  // #(White.pieces & N) = 1
-  #(Black.pieces & P) = 1
-  #(White.pieces & P) = 1
-  all p : (Black.pieces & P) | {
-    pc.p.coord[row] = colC
-    pc.p.coord.col = row3
-  }
-
-  all p : (White.pieces & P) | {
-    pc.p.coord[row] = colB
-    pc.p.coord.col = row2
-  }
-}
-
-// run {static and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 2 piece, exactly 2 P
-
 ------------------ TESTING + VERIFICATION --------------------
 
 --- SUPER BASIC TESTS --- 
 test expect {
   -- vacuity check (some traces for an 5x5 board)
-  // vacuityTest :  { traces } for exactly 5 col, exactly 5 row is sat 
-
-  -- tests that maintain color + teams size across turns  (COME BACK)
-  /* myColorTest : { always {
-      -- the white + black pieces stay the same OR decrease by one 
-      one p : White.pieces | (White.pieces = White.pieces') or (White.pieces - p = White.pieces')
-      one p : Black.pieces | (Black.pieces = Black.pieces') or (Black.pieces - p = Black.pieces')
-      
-      -- if a team loses a piece, the other team doesn't lose pieces
-      #(Black.pieces') < #(Black.pieces) implies { White.pieces = White.pieces' }
-      #(White.pieces') < #(White.pieces) implies  { Black.pieces = Black.pieces' }
-    } 
-  } for exactly 5 col, exactly 5 row is theorem -- FAILS ! **/ 
+  vacuityTest :  { traces } for exactly 5 col, exactly 5 row is sat 
 }
-
--- INSTANCES !! 
--- one empty or with one king?? -- unsat 
--- if no checkmate -- unsat (for generatePuzzle)
 
 ------------------ FORMAL STRUCTURAL TESTS --------------------
 -- basic instance: an empty board 
@@ -800,12 +770,89 @@ inst pawn {
   moves = P5->square16 + P5->square11 + P5->square12 + P1->square6 + P1->square7
 }
 
--- WHY DID I ONLY GET STATES WITH NO MOVES 
--- run { structural and allMoves and positionality } for exactly 8 row, exactly 8 col, exactly 3 piece, exactly 1 B, exactly 2 K 
+-- a king makes a benign move
+inst generalMove1 {
+    emptyBoard
 
--- run { structural and allMoves } for exactly 8 row, exactly 8 col, exactly 3 piece, exactly 1 B, exactly 2 K 
+    -- first state
+    pc = square13->K0 + square24->K1 + square4->R0
+    sq = K0->square13 + K1->square24 + R0->square4
 
--- TODO: INSERT state w/ kings here 
+    -- second state
+    pc' = square14->K0 + square24->K1 + square4->R0
+    sq' = K0->square14 + K1->square24 + R0->square4
+}
+
+-- two pieces switch places 
+inst generalMove2 {
+    emptyBoard
+
+    -- first state
+    pc = square13->K0 + square24->K1 + square4->R0 + square5->R1
+    sq = K0->square13 + K1->square24 + R0->square4 + R1->square5
+
+    -- second state
+    pc' = square14->K0 + square24->K1 + square5->R0 + square4->R1
+    sq' = K0->square14 + K1->square24 + R1->square5 + R0->square4
+}
+
+-- one piece tries to move to its teammate's spot
+inst generalMove3 {
+    emptyBoard
+
+    -- first state
+    pc = square13->K0 + square24->K1 + square4->R0 + square5->R1
+    sq = K0->square13 + K1->square24 + R0->square4 + R1->square5
+
+    -- second state
+    pc' = square14->K0 + square24->K1 + square5->R0
+    sq' = K0->square14 + K1->square24 + R0->square5 
+}
+
+-- a capture occurs (Rook takes other Rook)
+inst generalMove4 {
+    emptyBoard
+
+    -- first state
+    pc = square13->K0 + square24->K1 + square4->R0 + square5->R2
+    sq = K0->square13 + K1->square24 + R0->square4 + R2->square5
+
+    -- second state
+    pc' = square14->K0 + square24->K1 + square4->R2
+    sq' = K0->square14 + K1->square24 + R2->square4
+}
+
+-- queen moves
+inst queen {
+  emptyBoard
+  pc = square12->Q0 + square7->Q1
+  sq = Q0->square12 + Q1->square7
+  moves = Q0->square20 + Q0->square16 + Q0->square22 + Q0->square17 + Q0->square24 + Q0->square18 + Q0->square14 + Q0->square13 + Q0->square4 + Q0->square8 + Q0->square7 + Q0->square0 + Q0->square6 + Q0->square10 + Q0->square11 + Q1->square15 + Q1->square11 + Q1->square12 + Q1->square19 + Q1->square13 + Q1->square9 + Q1->square8 + Q1->square3 + Q1->square2 + Q1->square1 + Q1->square5 + Q1->square6
+}
+
+-- capture
+inst pawnCapture {
+  pawn
+  pc' = square12->P5
+  sq' = P5->square12
+  moves = P5->square17
+}
+
+-- twoRookMate
+inst twoRookMate {
+  emptyBoard
+  pc = square0->K0 + square4->R2 + square8->R3
+  sq = K0->square0 + R2->square4 + R3->square8
+  moves = R2->square0 + R2->square1 + R2->square2 + R2->square3 + R2->square24 + R2->square19 + R2->square14 + R2->square9 + R3->square5 + R3->square6 + R3->square7 + R3->square9 + R3->square23 + R3->square18 + R3->square13 + R3->square3
+}
+
+-- rookAndKing
+inst rookAndKing {
+  emptyBoard
+  pc = square11->K1 + square1->K0 + square4->R3
+  sq = K1->square11 + K0->square1 + R3->square4
+  moves = K1->square16 + K1->square17 + K1->square12 + K1->square17 + K1->square10 + K1->square15 + R3->square1 + R3->square2 + R3->square3 + R3->square24 + R3->square19 + R3->square14 + R3->square9
+}
 
 -- tests for state move soundness 
 test expect {
@@ -841,23 +888,74 @@ test expect {
   // } for pawn is sat
 
 
-  // check checkmate, stalemate, etc. 
+-- benign move
+  generalMove1Test: {
+      generalMove1
+      some p : piece | generalMove[p]
+  } is sat
+  -- two pieces switch places
+  generalMove2Test: {
+      generalMove2
+      some p : piece | generalMove[p]
+  } is sat
+  -- one piece tries to capture own teammate
+  generalMove3Test: {
+      generalMove3
+      some p : piece | generalMove[p]
+  } is sat
+  -- one piece captures another (validly)
+  generalMove4Test: {
+      generalMove4
+      some p : piece | generalMove[p]
+  } is sat
+
+
+  queenTest : {
+    allMoves
+  } for queen is sat
+
+  twoRookMateTest : {
+    checkmate
+  } for twoRookMate is sat
+
+  rookAndKingTest : {
+    checkmate
+  } for rookAndKing is sat
+  
 } 
 
------------------- FORMAL TRANSITION TESTS (2+ STATES) --------------------
+-- =================== generating move sequences =========================
 
-inst transitionPossible {
-  emptyBoard -- board setup 
-  -- .. edit 
+-- indicates what pieces are in example. Uncomment desired pieces and change # of pieces in run accordingly.
+pred scenario {
+
+  // #(Black.pieces & K) = 1
+  // #(White.pieces & K) = 1
+
+  // #(Black.pieces & Q) = 1
+  // #(White.pieces & Q) = 1
+  // #(Black.pieces & R) = 1
+  // #(White.pieces & R) = 1
+  // #(Black.pieces & B) = 1
+  // #(White.pieces & B) = 1
+  // #(Black.pieces & N) = 1
+  // #(White.pieces & N) = 1
+  // #(Black.pieces & P) = 1
+  // #(White.pieces & P) = 1
 }
 
+-- this is a sequence of endgame moves in a position with 3 pieces.
+// run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 2 K, exactly 1 R
 
+-- ==================== generating mate in 1 examples =======================================
+
+-- various common endgame scenarios where mate in 1 may or may not be possible. 
 
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 N, exactly 2 K -- unsat because 1 N checkmate impossible.
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 N, exactly 2 K -- sat because 2 N checkmate poss.
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 B, exactly 2 K -- unsat because 1 B checkmate impossible.
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 B, exactly 2 K -- sat because 2 B checkmate poss.
-// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 1 B, exactly 1 N, exactly 2 K
-// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 R, exactly 2 K -- sat 
-run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K -- sat
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 1 B, exactly 1 N, exactly 2 K -- sat
+run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 R, exactly 2 K -- sat 
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K -- sat
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 Q, exactly 2 K -- sat
