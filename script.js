@@ -7,111 +7,123 @@ function printValue(row, col, xoffset, yoffset, value) {
     switch(value) {
       case "BN0":
       case "BN1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_010.png')
-          .attr("x", row*75 + xoffset)
-          .attr("y", col*75 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u265e");
+        break;
       case "WN0":
       case "WN1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_004.png')
-          .attr("x", row*75 + xoffset)
-          .attr("y", col*75 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u2658");
+        break;
       case "WR0":
       case "WR1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_005.png')
-          .attr("x", row*70 + xoffset)
-          .attr("y", col*65 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u2656");
+        break;
       case "BR0":
       case "BR1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_011.png')
-          .attr("x", row*70 + xoffset)
-          .attr("y", col*65 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u265c");
+        break;
       case "BB0":
       case "BB1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_009.png')
-          .attr("x", row*75 + xoffset)
-          .attr("y", col*75 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u265d");
+        break;
       case "WB0":
       case "WB1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_003.png')
-          .attr("x", row*60 + xoffset)
-          .attr("y", col*60 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u2657");
+        break;
       case "WQ0":
       case "WQ1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_002.png')
-          .attr("x", row*60 + xoffset)
-          .attr("y", col*60 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u2655");
+        break;
       case "BQ0":
       case "BQ1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_002.png')
-          .attr("x", row*60 + xoffset)
-          .attr("y", col*60 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u265b");
+        break;
       case "WK0":
       case "WK1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_001.png')
-          .attr("x", row*60 + xoffset)
-          .attr("y", col*65 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u2654");
+        break;
       case "BK0":
       case "BK1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_007.png')
-          .attr("x", row*60 + xoffset)
-          .attr("y", col*65 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u265a");
+        break;
       case "WP0":
       case "WP1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_006.png')
-          .attr("x", row*70 + xoffset)
-          .attr("y", col*60 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
-         break;
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u2659");
+        break;
       case "BP0":
       case "BP1":
-        var myimage = d3.select(svg).append('image')
-          .attr('xlink:href', 'https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-cut-image-MQ3ZfwleMfk/image_part_012.png')
-          .attr("x", row*70 + xoffset)
-          .attr("y", col*60 + yoffset)
-          .attr('width', 50)
-          .attr('height', 50);
+        d3.select(svg)
+            .append("text")
+            .style("fill", "black")
+            .attr("x", row*75 + xoffset)
+            .attr("y", col*75 + yoffset)
+            .attr("font-size", "xxx-large")
+            .text("\u265f");
          break;
       default:
           d3.select(svg)
@@ -119,7 +131,7 @@ function printValue(row, col, xoffset, yoffset, value) {
             .style("fill", "black")
             .attr("x", row*75 + xoffset)
             .attr("y", col*75 + yoffset)
-            .attr("font-size", "xx-large")
+            .attr("font-size", "xxx-large")
             .text(value);
   }
 }

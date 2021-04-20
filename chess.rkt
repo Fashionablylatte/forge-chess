@@ -2,10 +2,6 @@
 
 option problem_type temporal 
 option max_tracelength 10 -- NEEDED! default is 5. need to be able to find the whole lasso.
-// option solver MiniSatProver
-// option logtranslation 1
-// option coregranularity 1
-// option core_minimization rce
 
 /*
  * Logic for Systems Final Project - Chess Model
@@ -156,7 +152,7 @@ fun allDiags[sq: square]: set square {
 -- STRUCTURE + VALIDITY ----------------------
 pred piecesToSquares { -- ensures squares and pieces are one-to-one mapped
   -- bidirectional mapping
-  all p: piece | all s: square {
+  all p: piece | all s: square { -- TODO verify
     s in p.sq iff p in s.pc
   }
 
@@ -269,6 +265,12 @@ pred validKings { -- should only and always have 2 kings.
   #(K) = 2
   all k: K | {
     some pc.k
+  }
+  one k: K | {
+    k in White.pieces
+  }
+  one k: K | {
+    k in Black.pieces
   }
 }
 
@@ -452,7 +454,10 @@ pred generalMove[p : piece] {
       pc' = pc - (pc.p -> p) + (s -> p) 
     }
   }
+  -- TODO verify new addition. Prevents king from being attacked after move.
+  after { no k: K | { isSameColor[k, p] and inCheck[k] }}
 }
+
 
 -- ensures all pieces maintain valid moves 
 pred allMoves {
@@ -466,41 +471,18 @@ pred allMoves {
 
 pred checkmate {
   some k : K | {
-    --TODO: Check king color
     -- A state where the king is under attack
-    // no k.moves
     some p1 : piece {
-      not isSameColor[k, p1]
-      pc.k in p1.moves
-      pc.p1 not in (pieces.k).pieces.moves
-      no p3 : piece | {
-        // generalMove[p3] implies after not inCheck[k]
-        isSameColor[k, p3]
+      not isSameColor[k, p1] -- piece is not same color
+      pc.k in p1.moves -- king under attack
+      no p3 : piece | { -- no piece that can move and end the threat
+        isSameColor[k, p3] -- TODO maybe remove this.
+        generalMove[p3] 
       }
     }
-    -- To block:
-      -- Attacking piece is knight or there is no piece that can get between that piece and the king square
-      -- Same way we check for obstructions (expensive)
-      -- p1 in the after state, p1 is no longer attacking k (temporality issue)
-      -- Not a pawn or a knight
-      -- One of the moves of some piece is a square in the set of moves of the attacking piece and 
-    -- And afterwards the king is still under attack and has no moves
-    -- Would this be able 
-    after {
-      no k.moves
-      some p2 : piece {
-        not isSameColor[k, p2]
-        pc.k in p2.moves
-      }
-    }
+    no k.moves
   }
 }
-
-// pred validBoard { -- position legality 
-//   // validKings
-//   piecesToSquares
-//   colorMembership
-// }
 
 pred whiteMove {
   some p: White.pieces | { generalMove[p] } 
@@ -518,7 +500,7 @@ pred turns {
 
 -- init state
 pred init {
-  // not checkmate
+  not checkmate
   whiteMove
   not adjacentKings
   colorMembership
@@ -538,19 +520,38 @@ pred traces {
   }
 }
 
+pred init2 {
+  whiteMove
+  all p: piece | {
+    some p.sq
+  }
+}
+
+pred checkAndNotMove {
+  whiteMove implies {
+    no k: K | { k in Black.pieces and inCheck[k] }
+  }
+  blackMove implies {
+    no k: K | { k in White.pieces and inCheck[k] }
+  }
+}
+
+pred mate1 {
+  init2
+  validKings
+  always {
+    colorMembership -- TODO move
+    structural
+    allMoves
+    checkAndNotMove
+  }
+  after checkmate 
+}
+
 pred static {
   colorMembership
   structural
   allMoves
-}
-
--- generates a chess puzzle 
-pred generatePuzzle {
-  traces until checkmate
-  always {
-    structural
-    allMoves 
-  }
 }
 
 pred scenario {
@@ -580,10 +581,6 @@ pred scenario {
 }
 
 // run {static and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 2 piece, exactly 2 P
-
--- generates a 5x5 board 
-// run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 2 piece, exactly 1 R, exactly 1 P
-// run {traces and scenario} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 5 piece, exactly 2 R, exactly 1 N, exactly 2 K
 
 ------------------ TESTING + VERIFICATION --------------------
 
@@ -853,3 +850,14 @@ inst transitionPossible {
   emptyBoard -- board setup 
   -- .. edit 
 }
+
+
+
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 N, exactly 2 K -- unsat because 1 N checkmate impossible.
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 N, exactly 2 K -- sat because 2 N checkmate poss.
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 B, exactly 2 K -- unsat because 1 B checkmate impossible.
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 B, exactly 2 K -- sat because 2 B checkmate poss.
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 1 B, exactly 1 N, exactly 2 K
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 R, exactly 2 K -- sat 
+run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K -- sat
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 Q, exactly 2 K -- sat
