@@ -50,6 +50,7 @@ sig R extends piece {} -- rook
 sig N extends piece {} -- knight
 sig B extends piece {} -- bishop
 sig K extends piece {} -- king
+sig Q extends piece {} -- queen
 
 -- Represents color of pieces 
 abstract sig Color {
@@ -402,6 +403,17 @@ pred validMovesForBishop[a: square, b: piece] {  -- should be B, but piece to al
     (a in ncnrDiags[pc.b] and (no p: piece | {pc.p in ncnrDiags[pc.b] and pc.p in pcprDiags[a]}))
 }
 
+-- Queen related preds -------------------------
+
+pred QMoves[q: Q] {
+  all s: square | {
+    s in q.moves iff {
+      some s.pc implies not isSameColor[q, s.pc]
+      validMovesForRook[s, q] or validMovesForBishop[s, q]
+    }
+  }
+}
+
 --- General move-related preds --------------
 
 -- also need to consider: white cannot move unless black moves b4 (before?), vice versa
@@ -473,6 +485,7 @@ pred allMoves {
   all k: K | { KMoves[k] }
   all n: N | { NMoves[n] }
   all b: B | { BMoves[b] }
+  all q: Q | { QMoves[q] }
 }
 
 pred whiteMove {
@@ -536,4 +549,4 @@ pred scenario {
 
 -- generates a standard board 
 // run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 N, exactly 2 K -- unsat because 1 N checkmate impossible.
-run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 B, exactly 2 K
+run {traces} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 Q, exactly 2 K
