@@ -117,40 +117,40 @@ fun pcprDiags[sq: square]: set square {
   pcprDiag[sq] + 
   pcprDiag[pcprDiag[sq]] + 
   pcprDiag[pcprDiag[pcprDiag[sq]]] + 
-  pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]] + 
-  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]] + 
-  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]] + 
-  pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]]]
+  pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]// + 
+  // pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]] + 
+  // pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]] + 
+  // pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[pcprDiag[sq]]]]]]]
 }
 
 fun pcnrDiags[sq: square]: set square {
   pcnrDiag[sq] + 
   pcnrDiag[pcnrDiag[sq]] + 
   pcnrDiag[pcnrDiag[pcnrDiag[sq]]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]] + 
-  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]]]
+  pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]] //+ 
+  // pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]] + 
+  // pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]] + 
+  // pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[pcnrDiag[sq]]]]]]]
 }
 
 fun ncnrDiags[sq: square]: set square {
   ncnrDiag[sq] + 
   ncnrDiag[ncnrDiag[sq]] + 
   ncnrDiag[ncnrDiag[ncnrDiag[sq]]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]] + 
-  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]]]
+  ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]] //+ 
+  // ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]] + 
+  // ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]] + 
+  // ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[ncnrDiag[sq]]]]]]]
 }
 
 fun ncprDiags[sq: square]: set square {
   ncprDiag[sq] + 
   ncprDiag[ncprDiag[sq]] + 
   ncprDiag[ncprDiag[ncprDiag[sq]]] + 
-  ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]] + 
-  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]] + 
-  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]] + 
-  ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]]]
+  ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]] //+ 
+  // ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]] + 
+  // ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]] + 
+  // ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[ncprDiag[sq]]]]]]]
 }
 
 -- find all diagonally reachable squares.
@@ -532,7 +532,7 @@ pred traces {
 
 -- checkmate related state stuff
 pred init2 {
-  whiteMove
+  whiteMove or blackMove
   all p: piece | {
     some p.sq
   }
@@ -568,362 +568,6 @@ pred static {
   allMoves
 }
 
------------------- TESTING + VERIFICATION --------------------
-
---- SUPER BASIC TESTS --- 
-test expect {
-  -- vacuity check (some traces for an 5x5 board)
-  vacuityTest :  { traces } for exactly 5 col, exactly 5 row is sat 
-}
-
------------------- FORMAL STRUCTURAL TESTS --------------------
--- basic instance: an empty board 
-inst emptyBoard {
-  -- rows and cols
-  colA = colA0
-  colB = colB0
-  colC = colC0
-  colD = colD0
-  colE = colE0
-
-  row1 = row10
-  row2 = row20
-  row3 = row30
-  row4 = row40
-  row5 = row50
-
-  row = row10 + row20 + row30 + row40 + row50
-  col = colA0 + colB0 + colC0 + colD0 + colE0
-
-  c_prev = colB0->colA0 + colC0->colB0 + colD0->colC0 + colE0->colD0
-  c_next = colA0->colB0 + colB0->colC0 + colC0->colD0 + colD0->colE0
-  r_prev = row20->row10 + row30->row20 + row40->row30 + row50->row40
-  r_next = row10->row20 + row20->row30 + row30->row40 + row40->row50
-
-  -- squares 
-  square = square0 + square1 + square2 + square3 + square4 + square5 + 
-    square6 + square7 + square8 + square9 + square10 + square11 + 
-    square12 + square13 + square14 + square15 + square16 + square17 + 
-    square18 + square19 + square20 + square21 + square22 + square23 + 
-    square24
-  
-  coord = square0->row1->colA + square1->row1->colB + square2->row1->colC + square3->row1->colD + 
-    square4->row1->colE + square5->row2->colA + square6->row2->colB + square7->row2->colC + 
-    square8->row2->colD + square9->row2->colE + square10->row3->colA + square11->row3->colB + 
-    square12->row3->colC + square13->row3->colD + square14->row3->colE + square15->row4->colA + 
-    square16->row4->colB + square17->row4->colC + square18->row4->colD + square19->row4->colE + 
-    square20->row5->colA + square21->row5->colB + square22->row5->colC + square23->row5->colD + 
-    square24->row5->colE
-
-  -- chess pieces
-  P = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9
-  N = N0 + N1 + N2 + N3
-  B = B0 + B1 + B2 + B3
-  R = R0 + R1 + R2 + R3
-  Q = Q0 + Q1
-  K = K0 + K1
-
-  piece = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + N0 + N1 + N2 + N3 + 
-    B0 + B1 + B2 + B3 + R0 + R1 + R2 + R3 + Q0 + Q1 + K0 + K1
-
-  -- color 
-  Black = Black0 
-  White = White0
-  Color = Black0 + White0
-  
-  pieces = Black0->P0 + Black0->P1 + Black0->P2 + Black0->P3 + Black0->P4 + White0->P5 + 
-    White0->P6 + White0->P7 + White0->P8 + White0->P9 + Black0->N0 + Black0->N1 + 
-    White0->N2 + White0->N3 + Black0->B0 + Black0->B1 + White0->B2 + White0->B3 + 
-    Black0->R0 + Black0->R1 + White0->R2 + White0->R3 + Black0->Q0 + White0->Q1 + 
-    Black0->K0 + White0->K1
-}
-
--- board with 2+ squares mapping to same coordinates 
-inst doubleMapBoard {
-    -- rows and cols
-  colA = colA0
-  colB = colB0
-  colC = colC0
-  colD = colD0
-  colE = colE0
-
-  row1 = row10
-  row2 = row20
-  row3 = row30
-  row4 = row40
-  row5 = row50
-
-  row = row10 + row20 + row30 + row40 + row50
-  col = colA0 + colB0 + colC0 + colD0 + colE0
-
-  c_prev = colB0->colA0 + colC0->colB0 + colD0->colC0 + colE0->colD0
-  c_next = colA0->colB0 + colB0->colC0 + colC0->colD0 + colD0->colE0
-  r_prev = row20->row10 + row30->row20 + row40->row30 + row50->row40
-  r_next = row10->row20 + row20->row30 + row30->row40 + row40->row50
-
-  -- squares 
-  square = square0 + square1 + square2 + square3 + square4 + square5 + 
-    square6 + square7 + square8 + square9 + square10 + square11 + 
-    square12 + square13 + square14 + square15 + square16 + square17 + 
-    square18 + square19 + square20 + square21 + square22 + square23 + 
-    square24
-  
-  -- two squares map to 2D
-  coord = square0->row1->colA + square1->row1->colB + square2->row1->colC + square3->row1->colD + 
-    square4->row1->colE + square5->row2->colA + square6->row2->colB + square7->row2->colC + 
-    square8->row2->colD + square9->row2->colD + square10->row3->colA + square11->row3->colB + 
-    square12->row3->colC + square13->row3->colD + square14->row3->colE + square15->row4->colA + 
-    square16->row4->colB + square17->row4->colC + square18->row4->colD + square19->row4->colE + 
-    square20->row5->colA + square21->row5->colB + square22->row5->colC + square23->row5->colD + 
-    square24->row5->colE
-
-  -- chess pieces
-  P = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9
-  N = N0 + N1 + N2 + N3
-  B = B0 + B1 + B2 + B3
-  R = R0 + R1 + R2 + R3
-  Q = Q0 + Q1
-  K = K0 + K1
-
-  piece = P0 + P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + N0 + N1 + N2 + N3 + 
-    B0 + B1 + B2 + B3 + R0 + R1 + R2 + R3 + Q0 + Q1 + K0 + K1
-
-  -- color 
-  Black = Black0 
-  White = White0
-  Color = Black0 + White0
-  
-  pieces = Black0->P0 + Black0->P1 + Black0->P2 + Black0->P3 + Black0->P4 + White0->P5 + 
-    White0->P6 + White0->P7 + White0->P8 + White0->P9 + Black0->N0 + Black0->N1 + 
-    White0->N2 + White0->N3 + Black0->B0 + Black0->B1 + White0->B2 + White0->B3 + 
-    Black0->R0 + Black0->R1 + White0->R2 + White0->R3 + Black0->Q0 + White0->Q1 + 
-    Black0->K0 + White0->K1
-}
-
--- tests for structual soundness 
-/* test expect {
-  -- an empty board that is correctly constructed is structually sound 
-  emptyBoardIsStructuralTest : {
-    structural
-  } for emptyBoard is sat
-
-  -- structural catches when squares don't have unique coordinates 
-  doubleMapBoardIsNotStructuralTest : {
-    structural
-  } for doubleMapBoard is unsat
-} **/
-
------------------- FORMAL STATE TESTS --------------------
-
--- state with just one piece 
-inst rookieMove {
-  emptyBoard -- board setup 
-  pc = square0->R0
-  sq = R0->square0
-  moves = R0->square1 + R0->square2 + R0->square3 + R0->square4 + R0->square5 + R0->square10 + R0->square15 + R0->square20
-}
-
--- state that doesn't keep track of moves (should be unsat)
-inst noMovesState {
-  emptyBoard -- board setup 
-  pc = square1->B1
-  sq = B1->square1 
-  no moves 
-}
-
--- state with correct moves for 2+ pieces/interactions 
-inst interactingPiecesState {
-  emptyBoard -- board setup 
-  pc = square0->K0 + square24->K1 + square1->R0
-  sq = K0->square0 + K1->square24 + B0->square1
-  moves = K0->square6 + K0->square5 + K1->square19 + K1->square23 + K1->square18 + 
-    R0->square6 + R0->square11 + R0->square16 + R0->square21 + R0->square2 + R0->square3 + R0->square4
-}
-
--- knight moves
-inst knight {
-  emptyBoard
-  pc = square0 -> N0 + square12 -> N1
-  sq = N0 -> square0 + N1 -> square12
-  moves = N0 -> square11 + N0 -> square7 + N1 -> square21 + N1 -> square23 + N1 -> square19 + N1 -> square9 + N1 -> square3 + N1 -> square1 + N1 -> square5 + N1 -> square15
-}
-
--- king moves
-inst king {
-  emptyBoard
-  pc = square0 -> K1 + square12 -> K0
-  sq = K1 -> square0 + K0 -> square12 
-  moves = K1 -> square1 + K1 -> square5 + K1 -> square6 + K0 -> square16 + K0 -> square17 + K0 -> square18 + K0 -> square13 + K0 -> square8 + K0 -> square7 + K0 -> square11
-}
--- bishop moves
-inst bishop {
-  emptyBoard
-  pc = square12->B0 + square6->B1
-  sq = B0->square12 + B1->square6
-  moves = B0->square20 + B0->square16 + B0->square24 + B0->square18 + B0->square4 + B0->square8 + B1->square10 + B1->square2 + B1->square0
-}
-
-inst pawn {
-  emptyBoard
-  pc = square12->P1 + square6->P5
-  sq = P1->square12 + P5->square6
-  moves = P5->square16 + P5->square11 + P5->square12 + P1->square6 + P1->square7
-}
-
--- a king makes a benign move
-inst generalMove1 {
-    emptyBoard
-
-    -- first state
-    pc = square13->K0 + square24->K1 + square4->R0
-    sq = K0->square13 + K1->square24 + R0->square4
-
-    -- second state
-    pc' = square14->K0 + square24->K1 + square4->R0
-    sq' = K0->square14 + K1->square24 + R0->square4
-}
-
--- two pieces switch places 
-inst generalMove2 {
-    emptyBoard
-
-    -- first state
-    pc = square13->K0 + square24->K1 + square4->R0 + square5->R1
-    sq = K0->square13 + K1->square24 + R0->square4 + R1->square5
-
-    -- second state
-    pc' = square14->K0 + square24->K1 + square5->R0 + square4->R1
-    sq' = K0->square14 + K1->square24 + R1->square5 + R0->square4
-}
-
--- one piece tries to move to its teammate's spot
-inst generalMove3 {
-    emptyBoard
-
-    -- first state
-    pc = square13->K0 + square24->K1 + square4->R0 + square5->R1
-    sq = K0->square13 + K1->square24 + R0->square4 + R1->square5
-
-    -- second state
-    pc' = square14->K0 + square24->K1 + square5->R0
-    sq' = K0->square14 + K1->square24 + R0->square5 
-}
-
--- a capture occurs (Rook takes other Rook)
-inst generalMove4 {
-    emptyBoard
-
-    -- first state
-    pc = square13->K0 + square24->K1 + square4->R0 + square5->R2
-    sq = K0->square13 + K1->square24 + R0->square4 + R2->square5
-
-    -- second state
-    pc' = square14->K0 + square24->K1 + square4->R2
-    sq' = K0->square14 + K1->square24 + R2->square4
-}
-
--- queen moves
-inst queen {
-  emptyBoard
-  pc = square12->Q0 + square7->Q1
-  sq = Q0->square12 + Q1->square7
-  moves = Q0->square20 + Q0->square16 + Q0->square22 + Q0->square17 + Q0->square24 + Q0->square18 + Q0->square14 + Q0->square13 + Q0->square4 + Q0->square8 + Q0->square7 + Q0->square0 + Q0->square6 + Q0->square10 + Q0->square11 + Q1->square15 + Q1->square11 + Q1->square12 + Q1->square19 + Q1->square13 + Q1->square9 + Q1->square8 + Q1->square3 + Q1->square2 + Q1->square1 + Q1->square5 + Q1->square6
-}
-
--- capture
-inst pawnCapture {
-  pawn
-  pc' = square12->P5
-  sq' = P5->square12
-  moves = P5->square17
-}
-
--- twoRookMate
-inst twoRookMate {
-  emptyBoard
-  pc = square0->K0 + square4->R2 + square8->R3
-  sq = K0->square0 + R2->square4 + R3->square8
-  moves = R2->square0 + R2->square1 + R2->square2 + R2->square3 + R2->square24 + R2->square19 + R2->square14 + R2->square9 + R3->square5 + R3->square6 + R3->square7 + R3->square9 + R3->square23 + R3->square18 + R3->square13 + R3->square3
-}
-
--- rookAndKing
-inst rookAndKing {
-  emptyBoard
-  pc = square11->K1 + square1->K0 + square4->R3
-  sq = K1->square11 + K0->square1 + R3->square4
-  moves = K1->square16 + K1->square17 + K1->square12 + K1->square17 + K1->square10 + K1->square15 + R3->square1 + R3->square2 + R3->square3 + R3->square24 + R3->square19 + R3->square14 + R3->square9
-}
-
--- tests for state move soundness 
-test expect {
-  /* -- an empty board that is correctly constructed is structually sound -- */
-  // rookieMoveOkTest : {
-  //   allMoves
-  // } for rookieMove is sat
-  
-  // /* -- a state with pieces and without moves doesn't work -- */
-  // noMovesTest : {
-  //   allMoves
-  // } for noMovesState is unsat
-
-  // // /* -- makes sure that moves with many pieces (mimicking a real board) are valid -- */
-  // interactingPiecesTest : {
-  //   allMoves
-  // } for interactingPiecesState is sat // CHECK!!!! **/ -- WHY DID I ONLY GET STATES WITH NO MOVES  
-
-  // knightTest : {
-  //   allMoves
-  // } for knight is sat
-
-  // kingTest : {
-  //   allMoves
-  // } for king is sat
-
-  // bishopTest : {
-  //   allMoves
-  // } for bishop is sat
-
-  // pawnTest : {
-  //   allMoves
-  // } for pawn is sat
-
-
--- benign move
-  generalMove1Test: {
-      generalMove1
-      some p : piece | generalMove[p]
-  } is sat
-  -- two pieces switch places
-  generalMove2Test: {
-      generalMove2
-      some p : piece | generalMove[p]
-  } is sat
-  -- one piece tries to capture own teammate
-  generalMove3Test: {
-      generalMove3
-      some p : piece | generalMove[p]
-  } is sat
-  -- one piece captures another (validly)
-  generalMove4Test: {
-      generalMove4
-      some p : piece | generalMove[p]
-  } is sat
-
-
-  queenTest : {
-    allMoves
-  } for queen is sat
-
-  twoRookMateTest : {
-    checkmate
-  } for twoRookMate is sat
-
-  rookAndKingTest : {
-    checkmate
-  } for rookAndKing is sat
-  
-} 
-
 -- =================== generating move sequences =========================
 
 -- indicates what pieces are in example. Uncomment desired pieces and change # of pieces in run accordingly.
@@ -954,8 +598,19 @@ pred scenario {
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 N, exactly 2 K -- unsat because 1 N checkmate impossible.
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 N, exactly 2 K -- sat because 2 N checkmate poss.
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 B, exactly 2 K -- unsat because 1 B checkmate impossible.
-// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 B, exactly 2 K -- sat because 2 B checkmate poss.
+run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 B, exactly 2 K -- sat because 2 B checkmate poss.
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 1 B, exactly 1 N, exactly 2 K -- sat
-run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 R, exactly 2 K -- sat 
+// run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 R, exactly 2 K -- sat 
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K -- sat
 // run {mate1} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 3 piece, exactly 1 Q, exactly 2 K -- sat
+// run {mate1} for exactly 8 col, exactly 8 row, exactly 64 square, exactly 4 piece, exactly 2 R, exactly 2 K -- sat -- stress test. 
+-- REMEMBER TO UNCOMMENT ROW/COL/DIAG as well!
+// run {mate 1  and #(Black.pieces) = 3} for exactly 5 col, exactly 5 row, exactly 25 square, exactly 4 piece, exactly 2 R, exactly 2 K -- sat
+
+// pred demo {
+//   #(B + N) = 2 or
+//   (#(R + Q) = 2 and #(pieces.R + pieces.Q) = 1)
+// }
+
+// run {mate1 and demo} for exactly 5 col, exactly 5 row, exactly 25 square, 4 piece, exactly 2 K -- for demoing random assortment of checkmates
+-- not useful because still only generates rooks, + visualizer breaks
